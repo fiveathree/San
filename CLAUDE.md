@@ -12,7 +12,7 @@
 
 ## 架構
 
-- 純靜態，單一 `index.html`（HTML + CSS + JS），加 `favicon.svg`。沒有 build、沒有後端。
+- 純靜態，單一 `index.html`（HTML + CSS + JS），加圖示 `favicon.ico`（16/32/48）、`favicon.svg`（內嵌 PNG）、`apple-touch-icon.png`：朱紅印章配「亂」字，以 Noto Serif TC Black 繪製。沒有 build、沒有後端。
 - 資料在 `<script>` 開頭：`CITY_RAW`（名, x, y, 規模, 州）、`ROADS`、`OFF_RAW`（姓名, 統武智政魅, 生, 卒, 出身城）、`SCENARIOS`（君主、城市、部下@駐地）。未列入劇本的武將，16 歲起以在野身分在出身城登場。
 - 狀態 `G` 全部可 JSON 化，存 localStorage：`luanshi.auto`（每月自動）、`luanshi.save`（手動）。
 - 身分由 `roleOf()` 計算；`canCommand()` 決定可否對城市下令。
