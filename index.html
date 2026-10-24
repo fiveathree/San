@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
-/* 版面：左為青綠設色輿圖，右為政令卷；戰鬥與對話以覆蓋卷軸呈現 */
+/* 版面：整頁固定一屏，不捲動。左為青綠設色輿圖（可拖曳），右為政令卷分頁；清單按高度自動分頁 */
 :root{
   --paper:#e7ebe0; --panel:#f4f6ef; --ink:#1d231e; --muted:#5d695f; --line:#c2cbbd;
   --seal:#ad2a1f; --seal-ink:#fff8f0; --gold:#8a6a1c;
@@ -33,85 +33,128 @@
   --good:#5cb882; --bad:#e2675b; --shade:rgba(0,0,0,.65); color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.6 var(--font-b);-webkit-text-size-adjust:100%}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 var(--font-b);-webkit-text-size-adjust:100%;overscroll-behavior:none}
+#app{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 h1,h2,h3{font-family:var(--font-d);font-weight:700;margin:0;text-wrap:balance;line-height:1.3}
-h2{font-size:20px} h3{font-size:15px}
+h2{font-size:19px} h3{font-size:15px}
+h3 small{font:400 13px var(--font-b);color:var(--muted);margin-left:6px}
 button{font:inherit;color:inherit}
-.muted{color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)} .ink{color:var(--ink)}
 .num{font-variant-numeric:tabular-nums}
-.btn{font-family:var(--font-d);font-weight:700;border:1px solid var(--ink);background:transparent;padding:6px 14px;border-radius:2px;cursor:pointer;letter-spacing:.08em;min-height:34px}
+.btn{font-family:var(--font-d);font-weight:700;border:1px solid var(--ink);background:transparent;padding:5px 13px;border-radius:2px;cursor:pointer;letter-spacing:.08em;min-height:34px}
 .btn:hover:not(:disabled){background:var(--ink);color:var(--paper)}
-.btn:focus-visible,.city:focus-visible,input:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+.btn:focus-visible,.city:focus-visible,input:focus-visible,.trow:focus-visible,.orow:focus-visible{outline:2px solid var(--seal);outline-offset:1px}
 .btn:disabled{opacity:.38;cursor:not-allowed}
 .btn.primary{background:var(--seal);border-color:var(--seal);color:var(--seal-ink)}
 .btn.primary:hover:not(:disabled){filter:brightness(1.1);background:var(--seal);color:var(--seal-ink)}
-.btn.small{padding:3px 9px;min-height:28px;font-size:13px}
+.btn.small{padding:2px 9px;min-height:30px;font-size:13px}
+.btn small{font-family:var(--font-b);font-weight:400;opacity:.7}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-
-/* 標題畫面 */
-.title{max-width:1080px;margin:0 auto;padding-block:40px 60px;display:grid;gap:28px}
-.title-head{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
-.big-seal{font-family:var(--font-d);font-weight:900;font-size:clamp(40px,8vw,72px);line-height:1;writing-mode:vertical-rl;background:var(--seal);color:var(--seal-ink);padding:14px 10px;letter-spacing:.12em;border-radius:3px}
-.title-head p{max-width:46ch;margin:0}
+.wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
 .label{font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:700}
-.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.scen button{text-align:left;border:1px solid var(--line);background:var(--panel);padding:14px 16px;cursor:pointer;border-radius:2px;display:grid;gap:4px}
-.scen button[aria-pressed="true"]{border-color:var(--seal);box-shadow:inset 4px 0 0 var(--seal)}
-.scen b{font-family:var(--font-d);font-size:18px}
-.picker{display:grid;gap:10px}
-.picker .row input[type=search]{flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:2px;font:inherit}
-.tabs{display:flex;gap:4px;flex-wrap:wrap}
-.tabs button{border:1px solid var(--line);background:transparent;padding:4px 10px;cursor:pointer;border-radius:2px;font-size:13px}
-.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.tbl-wrap{overflow:auto;max-height:52vh;border:1px solid var(--line);background:var(--panel)}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
-th,td{padding:5px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
-th{position:sticky;top:0;background:var(--panel);font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
-tbody tr{cursor:pointer}
-tbody tr:hover{background:var(--land)}
-tr.on{background:var(--land2)}
-.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
-.tag{display:inline-block;font-size:11px;padding:0 6px;border:1px solid currentColor;border-radius:2px;line-height:18px;letter-spacing:.06em}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tag{display:inline-block;font-size:11px;padding:0 5px;border:1px solid currentColor;border-radius:2px;line-height:17px;letter-spacing:.04em}
 .tag.lord{color:var(--seal)} .tag.gov{color:var(--gold)} .tag.free{color:var(--muted)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:transparent;padding:3px 10px;cursor:pointer;border-radius:2px;font-size:13px}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 
-/* 遊戲畫面 */
-.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding-block:8px}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
-.date{font-family:var(--font-d);font-weight:900;font-size:18px;letter-spacing:.06em}
-.who{display:flex;align-items:center;gap:8px}
-.mini-seal{font-family:var(--font-d);font-weight:700;background:var(--seal);color:var(--seal-ink);padding:2px 7px;border-radius:2px;letter-spacing:.1em}
-.ap{display:flex;align-items:center;gap:6px}
-.ap i{display:block;width:90px;height:8px;background:var(--line);border-radius:1px;overflow:hidden}
-.ap i b{display:block;height:100%;background:var(--seal)}
-.bar .spacer{flex:1}
-.game{display:grid;grid-template-columns:minmax(0,1fr) 400px;align-items:start}
-.mapwrap{padding:12px;min-width:0}
-#map{width:100%;height:auto;display:block;border:1px solid var(--line);background:var(--land)}
-.side{border-left:1px solid var(--line);background:var(--panel);padding-block:14px 30px;display:grid;gap:18px;min-width:0}
-.sec{display:grid;gap:8px}
-.sec h3{display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
-.stats div{border:1px solid var(--line);padding:2px 0}
-.stats small{display:block;color:var(--muted);font-size:11px}
-.stats b{font-variant-numeric:tabular-nums}
-.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;font-variant-numeric:tabular-nums}
-.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line)}
-.kv span{color:var(--muted)}
-.olist{display:grid;gap:2px;max-height:260px;overflow:auto}
-.orow{display:grid;grid-template-columns:minmax(0,1fr) repeat(5,28px);gap:4px;align-items:center;padding:3px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+/* 分頁清單 */
+.plist{flex:1;min-height:0;display:flex;flex-direction:column}
+.pl-body{flex:1;min-height:0;overflow:hidden}
+.pl-nav{flex:none;height:34px;display:flex;justify-content:center;align-items:center;gap:12px;font-size:13px}
+.pg{border:1px solid var(--line);background:transparent;padding:0 12px;height:28px;cursor:pointer;border-radius:2px}
+.pg:disabled{opacity:.35;cursor:default}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) repeat(5,26px);gap:4px;align-items:center;height:30px;padding:0 4px;border:0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;cursor:pointer;background:none;text-align:left;width:100%}
 .orow:hover{background:var(--land)}
+.orow.head{cursor:default;color:var(--muted);font-size:12px;flex:none}
+.orow.head:hover{background:none}
 .orow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .orow.done .nm{color:var(--muted)}
-.orow span{text-align:right}
+.orow > span:not(.nm){text-align:right}
+.lrow{display:grid;grid-template-columns:5.6em minmax(0,1fr);gap:8px;height:44px;align-items:center;border-bottom:1px solid var(--line);font-size:13px}
+.lrow time{color:var(--muted);font-variant-numeric:tabular-nums}
+.lrow span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lrow.me span{color:var(--seal)}
+
+/* 標題畫面 */
+.title{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;max-width:1100px;width:100%;margin:0 auto;padding-block:14px 10px}
+.title-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;flex:none}
+.big-seal{font:900 clamp(20px,3.4vw,30px)/1 var(--font-d);background:var(--seal);color:var(--seal-ink);padding:8px 10px;letter-spacing:.1em;border-radius:3px}
+.title-head h1{font-size:clamp(22px,3.2vw,32px)}
+.title-head p{flex:1;min-width:220px;max-width:46ch}
+.scen{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:none}
+.scen button{text-align:left;border:1px solid var(--line);background:var(--panel);padding:9px 13px;cursor:pointer;border-radius:2px;display:grid;gap:2px}
+.scen button[aria-pressed="true"]{border-color:var(--seal);box-shadow:inset 4px 0 0 var(--seal)}
+.scen b{font-family:var(--font-d);font-size:17px}
+.scen .desc{font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tctl{flex:none}
+.tctl input[type=search]{flex:1;min-width:140px;padding:6px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:2px;font:inherit}
+.listbox{flex:1;min-height:0;display:flex;flex-direction:column;border:1px solid var(--line);background:var(--panel)}
+.trow{display:grid;grid-template-columns:5.6em 3.4em minmax(0,1fr) repeat(5,2.8em) 2.6em;gap:4px;align-items:center;height:31px;padding:0 10px;border:0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;background:none;text-align:left;width:100%}
+.trow > *{overflow:hidden;text-overflow:ellipsis}
+.trow.head{cursor:default;font-size:12px;color:var(--muted);flex:none}
+.trow.head button{border:0;background:none;padding:0;cursor:pointer;color:inherit;text-align:left}
+.trow.on{background:var(--land2)}
+.trow:hover:not(.head){background:var(--land)}
+.tstart{flex:none}
+
+/* 遊戲畫面 */
+.bar{flex:none;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding-block:6px}
+.date{font-family:var(--font-d);font-weight:900;font-size:17px;letter-spacing:.04em}
+.who{display:flex;align-items:center;gap:7px;min-width:0}
+.mini-seal{font-family:var(--font-d);font-weight:700;background:var(--seal);color:var(--seal-ink);padding:1px 7px;border-radius:2px;letter-spacing:.08em;white-space:nowrap}
+.ap{display:flex;align-items:center;gap:6px}
+.ap i{display:block;width:80px;height:8px;background:var(--line);border-radius:1px;overflow:hidden}
+.ap i b{display:block;height:100%;background:var(--seal)}
+.spacer{flex:1}
+.game{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 380px}
+.mapcol{min-width:0;min-height:0;display:flex;flex-direction:column;gap:6px;padding:8px}
+.mapbox{flex:1;min-height:0;position:relative;border:1px solid var(--line);background:var(--land);overflow:hidden}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.ticker{list-style:none;margin:0;padding:0 2px;flex:none;font-size:13px}
+.ticker li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ticker time{color:var(--muted);margin-right:8px}
+.cstrip{display:none}
+.side{min-width:0;min-height:0;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+.stabs,.mnav{display:flex;flex:none}
+.stabs{border-bottom:1px solid var(--line)}
+.stabs button,.mnav button{flex:1;border:0;background:transparent;padding:8px 0;cursor:pointer;font:700 14px var(--font-d);letter-spacing:.15em;color:var(--muted);border-bottom:3px solid transparent}
+.stabs button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--seal)}
+.pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;padding-block:10px}
+.sec{display:flex;flex-direction:column;gap:6px;flex:none}
+.sec.grow{flex:1;min-height:0}
+.sec h3{border-bottom:1px solid var(--line);padding-bottom:3px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
+.stats div{border:1px solid var(--line);padding:1px 0;line-height:1.25}
+.stats small{display:block;color:var(--muted);font-size:11px}
+.stats b{font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;font-variant-numeric:tabular-nums}
+.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line)}
+.kv span{color:var(--muted)}
 .acts{display:flex;flex-wrap:wrap;gap:6px}
-.logwrap{border-top:1px solid var(--line);padding-block:10px 40px}
-.log{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:220px;overflow:auto;font-size:13px}
-.log li{display:grid;grid-template-columns:7.5em 1fr;gap:8px}
-.log li.me{color:var(--seal)}
-.log time{color:var(--muted);font-variant-numeric:tabular-nums}
-@media (max-width:920px){.game{grid-template-columns:1fr}.side{border-left:0;border-top:1px solid var(--line)}.mapwrap{padding:8px 0;overflow-x:auto}#map{min-width:720px}}
+.note{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mnav{display:none}
+@media (min-width:900px){.m-only{display:none!important}}
+@media (max-width:899px){
+  .game{grid-template-columns:minmax(0,1fr)}
+  .game[data-view="map"] .side{display:none}
+  .game:not([data-view="map"]) .mapcol{display:none}
+  .side{border-left:0}
+  .stabs,.ticker,.d-only{display:none!important}
+  .mapcol{padding:6px}
+  .cstrip{display:flex;gap:8px;align-items:center;justify-content:space-between;flex:none;min-height:34px}
+  .cstrip > span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mnav{display:flex;border-top:1px solid var(--line);background:var(--panel)}
+  .mnav button{border-bottom:0;border-top:3px solid transparent;padding:9px 0}
+  .mnav button[aria-pressed="true"]{color:var(--ink);border-top-color:var(--seal)}
+  .scen{grid-template-columns:1fr 1fr;gap:6px}
+  .scen .desc,.title-head p{display:none}
+  .trow{grid-template-columns:4.4em 2.9em minmax(0,1fr) repeat(5,1.9em);font-size:12px;padding:0 6px;gap:3px}
+  .trow .age{display:none}
+}
 
 /* 地圖 */
 .m-land{fill:var(--land)} .m-sea{fill:var(--sea)} .m-river{fill:none;stroke:var(--river);stroke-width:4;stroke-linecap:round}
@@ -129,36 +172,40 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .m-flagt{fill:var(--seal-ink);font:700 11px var(--font-d);text-anchor:middle}
 
 /* 覆蓋卷 */
-.modal{position:fixed;inset:0;background:var(--shade);z-index:35;display:grid;place-items:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.sheet{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--seal);max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:18px 20px;display:grid;gap:12px;border-radius:2px}
+.modal{position:fixed;inset:0;background:var(--shade);z-index:35;display:grid;place-items:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow:hidden}
+.sheet{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--seal);max-width:560px;width:100%;max-height:calc(100dvh - 32px);overflow:hidden;padding:16px 18px;display:flex;flex-direction:column;gap:10px;border-radius:2px}
+.sheet > *{flex:none}
+.sheet > .plist{flex:1}
+.sheet.tall{height:min(680px,calc(100dvh - 32px))}
 .sheet.wide{max-width:920px}
-.sheet p{margin:0}
-.choices{display:grid;gap:6px}
-.choices button{display:flex;justify-content:space-between;gap:10px;text-align:left;border:1px solid var(--line);background:transparent;padding:8px 12px;cursor:pointer;border-radius:2px}
-.choices button:hover:not(:disabled){border-color:var(--ink);background:var(--land)}
-.choices button:disabled{opacity:.4;cursor:not-allowed}
-.choices small{color:var(--muted)}
+.choices{display:flex;flex-direction:column;gap:6px}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:10px;height:40px;text-align:left;border:1px solid var(--line);background:transparent;padding:0 12px;cursor:pointer;border-radius:2px;width:100%;margin-bottom:4px}
+.crow:hover:not(:disabled){border-color:var(--ink);background:var(--land)}
+.crow:disabled{opacity:.4;cursor:not-allowed}
+.crow small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:2px;z-index:40;max-width:calc(100vw - 32px);font-size:14px}
 .busy{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--shade);color:var(--seal-ink);font:700 20px var(--font-d);letter-spacing:.2em}
+.hp{height:6px;background:var(--line);border-radius:1px;overflow:hidden}
+.hp b{display:block;height:100%}
 
 /* 戰場 */
-.bt{display:grid;gap:12px}
-.bt-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
-.bt-sides{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:640px){.bt-sides{grid-template-columns:1fr}}
-.bt-side{display:grid;gap:6px;align-content:start}
-.unit{border:1px solid var(--line);padding:6px 8px;display:grid;gap:3px;background:var(--paper);border-radius:2px;text-align:left}
+.bt-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.bt-sides{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bt-side{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bt-side h3{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit{border:1px solid var(--line);padding:4px 7px;display:grid;gap:2px;background:var(--paper);border-radius:2px;text-align:left;width:100%}
 .unit.active{border-color:var(--seal);box-shadow:inset 3px 0 0 var(--seal)}
 .unit.target{cursor:pointer;border-color:var(--ink)}
 .unit.target:hover{background:var(--land2)}
 .unit.dead{opacity:.4}
-.unit .top{display:flex;justify-content:space-between;gap:6px}
-.hp{height:6px;background:var(--line);border-radius:1px;overflow:hidden}
-.hp b{display:block;height:100%}
-.bt-log{list-style:none;margin:0;padding:8px 10px;border:1px solid var(--line);max-height:170px;overflow:auto;font-size:13px;display:grid;gap:1px;background:var(--paper)}
-.duel{border:1px solid var(--seal);padding:10px 12px;display:grid;gap:8px;background:var(--paper)}
+.unit .top{display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
+.unit .top b{overflow:hidden;text-overflow:ellipsis}
+.bt-log{list-style:none;margin:0;padding:6px 10px;border:1px solid var(--line);font-size:13px;background:var(--paper);height:66px;overflow:hidden}
+.bt-log li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duel{border:1px solid var(--seal);padding:8px 12px;display:grid;gap:6px;background:var(--paper)}
 .duel .hp{height:10px}
-@media (prefers-reduced-motion: no-preference){.unit{transition:background .15s}}
+@media (max-width:640px){.unit small{display:none}.sheet{padding:12px 12px}.bt-log{height:46px}}
+@media (prefers-reduced-motion: no-preference){.unit,.orow,.trow{transition:background .15s}}
 </style>
 </head>
 <body>
@@ -378,7 +425,7 @@ const LOYAL = {關羽:'劉備',張飛:'劉備'}; // 只願追隨特定君主
 const STAT = {lead:'統率',war:'武力',int:'智力',pol:'政治',cha:'魅力'};
 const STATK = Object.keys(STAT);
 const RANKS = [[0,'無官'],[200,'從事'],[600,'校尉'],[1200,'偏將軍'],[2200,'將軍'],[3800,'鎮軍將軍'],[6000,'大將軍']];
-const AP_MAX = 100, MAX_ROUND = 20, RISE_FAME = 200;
+const AP_MAX = 100, MAX_ROUND = 20, RISE_FAME = 200, PARTY_MAX = 5;
 const SAVE_KEY = 'luanshi.save', AUTO_KEY = 'luanshi.auto';
 // 地圖底圖
 const SEA = 'M780,0 L1000,0 L1000,720 L870,720 C860,640 880,580 860,540 C850,500 900,470 880,440 C860,400 820,370 820,320 C820,280 845,250 832,220 C815,190 782,172 762,142 C742,110 792,92 780,0Z';
@@ -450,7 +497,7 @@ function makeCity(i, line) {
 function newGame(si, life) {
   const S = SCENARIOS[si];
   G = {v:1, sc:si, year:S.year, month:1, life, cities:CITY_RAW.split('\n').map((l, i) => makeCity(i, l)),
-    forces:[], officers:[], player:-1, ap:AP_MAX, pgold:100, rel:{}, log:[], over:false, colorN:0};
+    forces:[], officers:[], player:-1, ap:AP_MAX, pgold:100, ptroops:0, party:[], rel:{}, log:[], over:false, colorN:0};
   G.officers = OFF_RAW.split('\n').map((l, i) => {
     const [name, lead, war, int, pol, cha, birth, death, home] = l.split(',');
     const o = {id:i, name, lead:+lead, war:+war, int:+int, pol:+pol, cha:+cha, birth:+birth,
@@ -473,7 +520,7 @@ function newGame(si, life) {
 }
 function enlist(o, f, ci) { o.status = 'serve'; o.force = f; o.city = ci; o.loyalty = rnd(80,100); }
 function startAs(id) {
-  G.player = id; const p = P(); G.ap = AP_MAX; UI.sel = p.city;
+  G.player = id; G.party = []; G.ptroops = 0; UI.vb = null; UI.view = 'map'; UI.side = 'act'; const p = P(); G.ap = AP_MAX; UI.sel = p.city;
   log(`${p.name}（${roleOf(p)}）的故事從${C(p.city).name}開始。`, true);
   saveTo(AUTO_KEY); render();
 }
@@ -811,7 +858,7 @@ function aiDomestic(c) {
 function aiRecruit(f) {
   const ruler = O(F(f.id).ruler);
   G.officers.forEach(o => {
-    if (o.status !== 'free' || o.id === G.player) return;
+    if (o.status !== 'free' || o.id === G.player || G.party.includes(o.id)) return;
     if (C(o.city).owner !== f.id) return;
     if (chance(0.12 + ruler.cha/600) && chance(recruitChance(ruler, o, false) + 0.2)) {
       enlist(o, f.id, o.city); o.loyalty = rnd(60,90);
@@ -910,6 +957,7 @@ function economy() {
   });
 }
 async function people() {
+  if (P().status === 'free') { G.party = G.party.filter(id => O(id).status === 'free'); partyMembers().forEach(o => { o.city = P().city; G.rel[o.id] = Math.min(100, (G.rel[o.id] || 0) + 2); }); } else { G.party = []; G.ptroops = 0; }
   for (const o of G.officers) {
     if (o.status === 'dead') continue;
     if (G.year > o.dy || (G.year === o.dy && G.month >= o.dm)) {
@@ -925,7 +973,7 @@ async function people() {
       o.status = 'free'; o.city = o.home;
       if (total(o) >= 360) log(`${o.name} 在${C(o.home).name}嶄露頭角。`);
     }
-    if (o.status === 'free' && o.id !== G.player && chance(0.04)) o.city = ADJ[o.city][rnd(0, ADJ[o.city].length - 1)];
+    if (o.status === 'free' && o.id !== G.player && !G.party.includes(o.id) && chance(0.04)) o.city = ADJ[o.city][rnd(0, ADJ[o.city].length - 1)];
   }
 }
 async function invitation() {
@@ -933,7 +981,7 @@ async function invitation() {
   if (p.status !== 'free' || p.fame < 120) return;
   const c = C(p.city); if (c.owner == null || !chance(0.08)) return;
   const ok = await ask(`${fname(c.owner)}派使者前來，邀請你出仕。`, '接受', '婉拒');
-  if (ok) { enlist(p, c.owner, c.id); p.loyalty = 100; log(`你應邀仕官於${fname(c.owner)}。`, true); }
+  if (ok) { enlist(p, c.owner, c.id); p.loyalty = 100; const msg = bringParty(c.owner, c.id); log(`你應邀仕官於${fname(c.owner)}。${msg}`, true); }
   else log(`你婉拒了${fname(c.owner)}的邀請。`, true);
 }
 async function checkEnd() {
@@ -967,6 +1015,18 @@ async function playerCaptured(o, f) {
 }
 
 // ───────── 玩家行動 ─────────
+const partyMembers = () => (G.party || []).map(O).filter(o => o.status === 'free');
+function inviteChance(o) {
+  const p = P();
+  const lord = LOYAL[o.name]; if (lord && byName(lord).status !== 'dead' && p.name !== lord) return 0.03;
+  return clamp(0.15 + (G.rel[o.id] || 0) / 110 + (p.cha - 50) / 200 + (p.fame - o.fame) / 1500, 0.05, 0.95);
+}
+function bringParty(f, ci) {
+  const mem = partyMembers(); mem.forEach(o => { enlist(o, f, ci); o.loyalty = 90; });
+  const n = G.ptroops; if (n) C(ci).troops += n;
+  G.party = []; G.ptroops = 0;
+  return [mem.length ? `同伴${mem.map(o => o.name).join('、')}一同加入。` : '', n ? `義勇兵 ${n} 人編入${C(ci).name}。` : ''].join('');
+}
 function useAP(n) { if (G.ap < n) { toast('行動力不足，請結束本月。'); return false; } G.ap -= n; return true; }
 function personalActs() {
   const p = P(), r = roleOf(p), c = C(p.city), A = [];
@@ -974,9 +1034,13 @@ function personalActs() {
   A.push({k:'visit', n:'拜訪', cost:20});
   A.push({k:'train', n:'鍛鍊', cost:30});
   if (r === '在野') {
-    A.push({k:'serve', n:'仕官', cost:20, dis:c.owner == null ? '此城無主' : ''});
-    A.push({k:'rise', n:'舉兵', cost:0, dis:c.owner != null ? '只可在無主城市舉兵' : p.fame < RISE_FAME ? `名聲需達 ${RISE_FAME}` : ''});
+    const others = presentIn(p.city).filter(o => o.status === 'free' && o.id !== p.id && !G.party.includes(o.id));
+    const canRise = p.fame >= RISE_FAME || (G.party.length >= 2 && G.ptroops >= 1000);
+    A.push({k:'invite', n:'邀請同行', cost:20, dis:G.party.length >= PARTY_MAX ? `同伴已滿 ${PARTY_MAX} 人` : !others.length ? '此城沒有其他在野人士' : ''});
     A.push({k:'bandit', n:'討伐賊寇', cost:40});
+    A.push({k:'muster', n:'招募義勇', cost:40, dis:G.pgold < 30 ? '私財需 30' : G.ptroops >= 5000 ? '義勇兵已達 5000' : ''});
+    A.push({k:'serve', n:'仕官', cost:20, dis:c.owner == null ? '此城無主' : ''});
+    A.push({k:'rise', n:'舉兵', cost:0, dis:c.owner != null ? '只可在無主城市舉兵' : !canRise ? `需名聲 ${RISE_FAME}，或同伴 2 人及義勇 1000` : ''});
   } else if (r !== '俘虜') {
     A.push({k:'task', n:'內政', cost:30, dis:c.owner !== p.force ? '不在己方城市' : ''});
     if (r !== '主公') A.push({k:'leave', n:'下野', cost:0});
@@ -1001,8 +1065,9 @@ async function doPersonal(k) {
     if (to == null || !useAP(40)) return;
     if (C(p.city).gov === p.id && !isRuler(p)) C(p.city).gov = null;
     p.city = to; UI.sel = to;
+    if (p.status === 'free') partyMembers().forEach(o => o.city = to);
     if (p.status === 'serve') { fixGov(c); fixGov(C(to)); }
-    log(`你移動到${C(to).name}。`, true);
+    log(`你${p.status === 'free' && G.party.length ? '與同伴' : ''}移動到${C(to).name}。`, true);
   } else if (k === 'visit') {
     const list = presentIn(p.city).filter(o => o.id !== p.id);
     if (!list.length) return toast('此城沒有可拜訪的人。');
@@ -1015,27 +1080,48 @@ async function doPersonal(k) {
     const s = await choose('鍛鍊哪一項？', STATK.map(s => ({label:STAT[s], sub:`${p[s]}（經驗 ${p.exp[s]}/100）`, value:s, disabled:p[s] >= 100})));
     if (s == null || !useAP(30)) return;
     const v = 25 + rnd(0, 15); gainExp(p, s, v);
-    log(`你潛心鍛鍊${STAT[s]}，經驗 +${v}。`, true);
+    const mem = p.status === 'free' ? partyMembers() : [];
+    mem.forEach(o => { gainExp(o, s, Math.round(v * 0.4)); G.rel[o.id] = Math.min(100, (G.rel[o.id] || 0) + 1); });
+    log(`你${mem.length ? '與同伴一同' : '潛心'}鍛鍊${STAT[s]}，經驗 +${v}。`, true);
   } else if (k === 'serve') {
     const ruler = O(F(c.owner).ruler);
-    const pr = clamp(0.3 + p.fame/400 + (G.rel[ruler.id] || 0)/150 + (total(p) - 300)/500 - forceCities(c.owner).length * 0.01, 0.05, 0.95);
+    const pr = clamp(0.3 + p.fame/400 + (G.rel[ruler.id] || 0)/150 + (total(p) - 300)/500 + G.party.length * 0.03 + G.ptroops / 20000 - forceCities(c.owner).length * 0.01, 0.05, 0.95);
     if (!(await ask(`向${ruler.name}求仕？（成功率約 ${Math.round(pr*100)}%）`, '求仕', '取消')) || !useAP(20)) return;
-    if (chance(pr)) { enlist(p, c.owner, p.city); p.loyalty = 100; p.merit = Math.max(p.merit, 0); p.fame += 10; log(`${ruler.name} 接納了你，你仕官於${ruler.name}。`, true); }
+    if (chance(pr)) { enlist(p, c.owner, p.city); p.loyalty = 100; p.fame += 10; const msg = bringParty(c.owner, p.city); log(`${ruler.name} 接納了你，你仕官於${ruler.name}。${msg}`, true); }
     else log(`${ruler.name} 婉拒了你的求仕。`, true);
   } else if (k === 'rise') {
-    const followers = presentIn(p.city).filter(o => o.status === 'free' && o.id !== p.id && (G.rel[o.id] || 0) >= 50);
+    const followers = presentIn(p.city).filter(o => o.status === 'free' && o.id !== p.id && (G.party.includes(o.id) || (G.rel[o.id] || 0) >= 50));
     if (!(await ask(`在${c.name}舉兵自立？${followers.length ? `願追隨你的人：${followers.map(o => o.name).join('、')}。` : '目前沒有人追隨你。'}`, '舉兵', '取消'))) return;
     const fi = G.forces.length;
     G.forces.push({id:fi, ruler:p.id, color:SPARE_COLORS[G.colorN++ % SPARE_COLORS.length], alive:true});
     enlist(p, fi, p.city); p.loyalty = 100; p.merit = Math.max(p.merit, 1000);
-    c.owner = fi; c.gov = p.id; c.troops += 1000 + p.fame * 8; c.gold += 300 + G.pgold; c.food += 3000; c.delegate = false; G.pgold = 0;
+    c.owner = fi; c.gov = p.id; c.troops += 1000 + p.fame * 8 + G.ptroops; c.gold += 300 + G.pgold; c.food += 3000; c.delegate = false; G.pgold = 0; G.ptroops = 0; G.party = [];
     followers.forEach(o => enlist(o, fi, p.city));
     log(`你在${c.name}舉兵，成為一方之主！`, true);
   } else if (k === 'bandit') {
     if (!useAP(40)) return;
-    const pr = clamp(0.35 + (p.war + p.lead) / 260, 0.2, 0.92);
-    if (chance(pr)) { const g = rnd(50, 150), fm = rnd(10, 25); G.pgold += g; p.fame += fm; gainExp(p, 'war', 12); gainExp(p, 'lead', 6); log(`你討平${c.name}附近的賊寇，名聲 +${fm}，得金 ${g}。`, true); }
-    else { p.fame = Math.max(0, p.fame - 5); gainExp(p, 'war', 5); log('你討伐賊寇失利，狼狽而回。', true); }
+    const mem = partyMembers();
+    const pr = clamp(0.35 + (p.war + p.lead) / 260 + mem.reduce((s, o) => s + o.war + o.lead, 0) / 900 + G.ptroops / 10000, 0.2, 0.97);
+    const k2 = 1 + mem.length * 0.3;
+    if (chance(pr)) {
+      const g = Math.round(rnd(50, 150) * k2), fm = Math.round(rnd(10, 25) * (1 + mem.length * 0.15));
+      G.pgold += g; p.fame += fm; gainExp(p, 'war', 12); gainExp(p, 'lead', 6);
+      mem.forEach(o => { o.fame += Math.round(fm / 2); gainExp(o, 'war', 8); G.rel[o.id] = Math.min(100, (G.rel[o.id] || 0) + 3); });
+      log(`你${mem.length ? `與${mem.map(o => o.name).join('、')}` : ''}討平${c.name}附近的賊寇，名聲 +${fm}，得金 ${g}。`, true);
+    } else { p.fame = Math.max(0, p.fame - 5); gainExp(p, 'war', 5); log(`你${mem.length ? '一行人' : ''}討伐賊寇失利，狼狽而回。`, true); }
+  } else if (k === 'invite') {
+    const list = presentIn(p.city).filter(o => o.status === 'free' && o.id !== p.id && !G.party.includes(o.id));
+    const id = await pickOfficer('邀請誰同行？', list, 'cha', o => `親密 ${G.rel[o.id] || 0}・約 ${Math.round(inviteChance(o) * 100)}%`);
+    if (id == null || !useAP(20)) return;
+    const o = O(id);
+    if (chance(inviteChance(o))) { G.party.push(id); G.rel[id] = Math.min(100, (G.rel[id] || 0) + 5); log(`${o.name} 與你志同道合，願意結伴同行。`, true); }
+    else { G.rel[id] = Math.min(100, (G.rel[id] || 0) + 2); log(`${o.name} 婉拒同行。多拜訪增加親密度再試。`, true); }
+  } else if (k === 'muster') {
+    if (!useAP(40)) return;
+    const mem = partyMembers();
+    const v = Math.min(5000 - G.ptroops, Math.round(80 + p.cha * 2 + mem.reduce((s, o) => s + o.cha, 0) * 0.8 + p.fame / 5 + rnd(0, 60)));
+    G.pgold -= 30; G.ptroops += v; p.fame += 2; gainExp(p, 'cha', 6);
+    log(`你${mem.length ? '與同伴' : ''}在${c.name}招募義勇兵 ${v} 人（共 ${G.ptroops}）。`, true);
   } else if (k === 'task') {
     const key = await choose('親自執行哪項內政？', Object.entries(TASKS).map(([k, T]) => { const ok = T.can(c); return {label:T.n, sub:ok === true ? `${STAT[T.s]} ${p[T.s]}・費用 ${T.cost}` : ok, value:k, disabled:ok !== true || c.gold < T.cost}; }));
     if (key == null || !useAP(30)) return;
@@ -1043,7 +1129,7 @@ async function doPersonal(k) {
     log(r.err ? r.err : `你親自${TASKS[key].n}：${r.msg}`, true);
   } else if (k === 'leave') {
     if (!(await ask(`離開${fname(p.force)}，成為在野之士？`, '下野', '取消'))) return;
-    const f = p.force; freeOfficer(p, p.city); fixGov(c); p.fame = Math.max(0, p.fame - 10);
+    const f = p.force; freeOfficer(p, p.city); fixGov(c); p.fame = Math.max(0, p.fame - 10); G.party = []; G.ptroops = 0;
     log(`你辭去官職，離開${fname(f)}。`, true);
   } else if (k === 'rebel') {
     const old = p.force;
@@ -1143,19 +1229,57 @@ async function doCommand(k, ci) {
   render();
 }
 
+// ───────── 介面：分頁清單（整頁不捲動，清單按可用高度自動分頁）─────────
+const isMobile = () => matchMedia('(max-width: 899px)').matches;
+UI.lists = {}; UI.pages = {};
+function listBox(key, rows, head = '', empty = '沒有資料。') {
+  UI.lists[key] = {rows, empty};
+  return `<div class="plist" data-list="${key}">${head}<div class="pl-body"></div><div class="pl-nav"></div></div>`;
+}
+function fillList(el) {
+  const key = el.dataset.list, L = UI.lists[key]; if (!L) return;
+  const rows = typeof L.rows === 'function' ? L.rows() : L.rows;
+  const body = el.querySelector('.pl-body'), nav = el.querySelector('.pl-nav');
+  if (!rows.length) { body.innerHTML = `<p class="muted" style="padding:6px 8px">${esc(L.empty)}</p>`; nav.innerHTML = ''; return; }
+  body.innerHTML = rows[0];
+  const rh = body.firstElementChild.getBoundingClientRect().height || 30;
+  const per = Math.max(1, Math.floor((body.clientHeight + 1) / rh));
+  const pages = Math.ceil(rows.length / per);
+  const pg = clamp(UI.pages[key] || 0, 0, pages - 1); UI.pages[key] = pg;
+  body.innerHTML = rows.slice(pg * per, pg * per + per).join('');
+  nav.innerHTML = pages > 1 ? `<button class="pg" data-pg="-1" ${pg ? '' : 'disabled'}>‹ 上頁</button><span class="num muted">${pg + 1} / ${pages}</span><button class="pg" data-pg="1" ${pg < pages - 1 ? '' : 'disabled'}>下頁 ›</button>` : '';
+}
+const fitLists = (root = document) => root.querySelectorAll('[data-list]').forEach(fillList);
+document.addEventListener('click', e => {
+  const b = e.target.closest('.pg'); if (!b) return;
+  e.stopPropagation();
+  const el = b.closest('[data-list]'); UI.pages[el.dataset.list] = (UI.pages[el.dataset.list] || 0) + +b.dataset.pg; fillList(el);
+}, true);
+let resizeT;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeT);
+  resizeT = setTimeout(() => {
+    const was = UI.mob; UI.mob = isMobile();
+    if (was !== UI.mob && !document.querySelector('.modal')) return render();
+    fitMap(); fitLists();
+  }, 120);
+});
+
 // ───────── 介面：通用 ─────────
 function modal(html, cls = '') {
   const m = document.createElement('div'); m.className = 'modal';
   m.innerHTML = `<div class="sheet ${cls}" role="dialog" aria-modal="true">${html}</div>`;
-  document.body.appendChild(m); return m;
+  document.body.appendChild(m); fitLists(m); return m;
 }
 function choose(title, items, sub = '') {
   return new Promise(res => {
-    const m = modal(`<h2>${esc(title)}</h2>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}<div class="choices">${items.map((it, i) => `<button data-i="${i}" ${it.disabled ? 'disabled' : ''}><span>${esc(it.label)}</span><small>${esc(it.sub || '')}</small></button>`).join('')}</div><div class="row"><button class="btn" data-x>取消</button></div>`);
+    const rows = items.map((it, i) => `<button class="crow" data-i="${i}" ${it.disabled ? 'disabled' : ''}><span>${esc(it.label)}</span><small>${esc(it.sub || '')}</small></button>`);
+    const many = items.length > 6;
+    const m = modal(`<h2>${esc(title)}</h2>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}${many ? listBox('choose', rows) : `<div class="choices">${rows.join('')}</div>`}<div class="row"><button class="btn" data-x>取消</button></div>`, many ? 'tall' : '');
     m.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b && e.target !== m) return;
-      if (e.target === m || b.hasAttribute('data-x')) { m.remove(); res(null); return; }
-      if (b.dataset.i != null) { m.remove(); res(items[+b.dataset.i].value); }
+      const b = e.target.closest('button');
+      if (e.target === m || (b && b.hasAttribute('data-x'))) { m.remove(); res(null); return; }
+      if (b && b.dataset.i != null) { m.remove(); res(items[+b.dataset.i].value); }
     });
   });
 }
@@ -1167,13 +1291,13 @@ function ask(text, yes, no) {
 }
 function notice(text, ok = '確定') { return new Promise(res => { const m = modal(`<p>${esc(text)}</p><div class="row"><button class="btn primary">${esc(ok)}</button></div>`); m.querySelector('button').onclick = () => { m.remove(); res(); }; }); }
 function statCells(o, hi) { return STATK.map(s => `<span class="${hi && s !== hi ? 'muted' : ''}" style="${s === hi ? 'font-weight:700' : ''}">${o[s]}</span>`).join(''); }
+const statHead = (first) => `<div class="orow head"><span class="nm">${esc(first)}</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>`;
 function pickOfficer(title, list, hi, extra) {
   return new Promise(res => {
     const sorted = list.slice().sort((a, b) => b[hi] - a[hi]);
-    const m = modal(`<h2>${esc(title)}</h2>
-      <div class="orow muted" style="cursor:default"><span class="nm">姓名</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>
-      <div class="olist" style="max-height:50vh">${sorted.map(o => `<button class="orow" data-id="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(extra ? extra(o) : roleOf(o))}</small></span>${statCells(o, hi)}</button>`).join('')}</div>
-      <div class="row"><button class="btn" data-x>取消</button></div>`);
+    UI.pages.pick = 0;
+    const rows = sorted.map(o => `<button class="orow" data-id="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(extra ? extra(o) : roleLabel(o))}</small></span>${statCells(o, hi)}</button>`);
+    const m = modal(`<h2>${esc(title)}</h2>${listBox('pick', rows, statHead('姓名'))}<div class="row"><button class="btn" data-x>取消</button></div>`, 'tall');
     m.addEventListener('click', e => {
       const b = e.target.closest('button');
       if (e.target === m || (b && b.hasAttribute('data-x'))) { m.remove(); res(null); return; }
@@ -1184,23 +1308,27 @@ function pickOfficer(title, list, hi, extra) {
 function attackSetup(c, t, pool) {
   return new Promise(res => {
     const def = t.owner == null ? 0 : servants(t.owner, t.id).length;
+    const on = new Set(pool.slice(0, 3).map(o => o.id));
+    UI.pages.atk = 0;
+    const rows = () => pool.map(o => `<label class="orow" style="grid-template-columns:24px minmax(0,1fr) repeat(3,40px)"><input type="checkbox" data-id="${o.id}" ${on.has(o.id) ? 'checked' : ''}><span class="nm">${esc(o.name)}${o.id === G.player ? '（你）' : ''}</span><span>統${o.lead}</span><span>武${o.war}</span><span>智${o.int}</span></label>`);
     const m = modal(`<h2>出征${esc(t.name)}</h2>
       <p class="muted">敵：${esc(fname(t.owner))}・守兵 ${t.troops}・武將 ${def}・城防 ${t.def}</p>
-      <div class="label">選擇出陣武將（最多 5 名，第一位為主將）</div>
-      <div class="olist" style="max-height:38vh">${pool.map((o, i) => `<label class="orow" style="grid-template-columns:24px minmax(0,1fr) repeat(3,32px)"><input type="checkbox" id="pk${o.id}" data-i="${i}" ${i < 3 ? 'checked' : ''}><span class="nm">${esc(o.name)}${o.id === G.player ? '（你）' : ''}</span><span>統${o.lead}</span><span>武${o.war}</span><span>智${o.int}</span></label>`).join('')}</div>
+      <div class="label">出陣武將（最多 5 名，統率最高者為主將）</div>
+      ${listBox('atk', rows)}
       <label class="row" for="atk-n">兵力 <input type="range" id="atk-n" min="0" max="${c.troops}" step="100" value="${Math.floor(c.troops * 0.8 / 100) * 100}" style="flex:1"><output id="atk-o" class="num"></output></label>
-      <div class="row"><button class="btn primary" data-go>出陣</button><button class="btn" data-x>取消</button></div>`);
+      <div class="row"><button class="btn primary" data-go>出陣</button><button class="btn" data-x>取消</button></div>`, 'tall');
     const rng = m.querySelector('#atk-n'), out = m.querySelector('#atk-o');
     const upd = () => out.textContent = `${rng.value} / ${c.troops}`; upd(); rng.oninput = upd;
     m.addEventListener('change', e => {
       if (e.target.type !== 'checkbox') return;
-      const on = m.querySelectorAll('input[type=checkbox]:checked');
-      if (on.length > 5) { e.target.checked = false; toast('最多 5 名武將。'); }
+      const id = +e.target.dataset.id;
+      if (e.target.checked) { if (on.size >= 5) { e.target.checked = false; return toast('最多 5 名武將。'); } on.add(id); } else on.delete(id);
     });
     m.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.hasAttribute('data-x')) { m.remove(); res(null); return; }
-      const offs = [...m.querySelectorAll('input[type=checkbox]:checked')].map(x => pool[+x.dataset.i]);
+      if (!b.hasAttribute('data-go')) return;
+      const offs = pool.filter(o => on.has(o.id)).sort((a, b) => (b.id === G.player && isRuler(b)) - (a.id === G.player && isRuler(a)) || b.lead - a.lead);
       const n = +rng.value;
       if (!offs.length) return toast('請選擇至少一名武將。');
       if (n < 500 && !(t.owner == null && t.troops === 0)) return toast('兵力至少 500。');
@@ -1229,17 +1357,18 @@ function transportSetup(c, dests) {
 function lordCaptives(list) {
   return new Promise(res => {
     const p = P();
-    const row = o => { const pr = recruitChance(p, o, true); return `<div class="orow" style="grid-template-columns:minmax(0,1fr) auto;cursor:default" data-row="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">統${o.lead} 武${o.war} 智${o.int} 政${o.pol} 魅${o.cha}</small></span>${o.status === 'captive' ? `<span class="row"><button class="btn small" data-a="hire" data-id="${o.id}">登用 ${Math.round(pr*100)}%</button><button class="btn small" data-a="free" data-id="${o.id}">釋放</button><button class="btn small" data-a="kill" data-id="${o.id}">處斬</button></span>` : `<span class="muted">${esc(roleOf(o))}</span>`}</div>`; };
-    const m = modal(`<h2>處置俘虜</h2><div class="olist" id="cap-list">${list.map(row).join('')}</div><div class="row"><button class="btn" data-a="done">完成</button></div>`);
+    UI.pages.caps = 0;
+    const rows = () => list.map(o => `<div class="orow" style="grid-template-columns:minmax(0,1fr) auto;height:40px;cursor:default"><span class="nm">${esc(o.name)} <small class="muted">統${o.lead} 武${o.war} 智${o.int}</small></span>${o.status === 'captive' ? `<span class="row" style="gap:4px;flex-wrap:nowrap"><button class="btn small" data-a="hire" data-id="${o.id}">登用 ${Math.round(recruitChance(p, o, true) * 100)}%</button><button class="btn small" data-a="free" data-id="${o.id}">放</button><button class="btn small" data-a="kill" data-id="${o.id}">斬</button></span>` : `<span class="muted">${esc(roleOf(o))}</span>`}</div>`);
+    const m = modal(`<h2>處置俘虜</h2>${listBox('caps', rows)}<div class="row"><button class="btn primary" data-a="done">完成</button></div>`, list.length > 4 ? 'tall' : '');
     m.addEventListener('click', e => {
-      const b = e.target.closest('button'); if (!b) return;
+      const b = e.target.closest('button[data-a]'); if (!b) return;
       const a = b.dataset.a;
       if (a === 'done') { m.remove(); res(); return; }
       const o = O(+b.dataset.id);
       if (a === 'hire') { if (chance(recruitChance(p, o, true))) { o.status = 'serve'; o.loyalty = rnd(50,75); log(`${o.name} 歸降我軍。`, true); } else { log(`${o.name} 不肯歸降。`, true); toast(`${o.name} 不肯歸降。`); } }
       if (a === 'free') { freeOfficer(o, o.city); log(`釋放了${o.name}。`, true); }
       if (a === 'kill') { killOfficer(o, `處斬了${o.name}。`); p.fame = Math.max(0, p.fame - 15); }
-      m.querySelector(`[data-row="${o.id}"]`).outerHTML = row(o);
+      fillList(m.querySelector('[data-list]'));
     });
   });
 }
@@ -1259,6 +1388,7 @@ function openBattle(B) {
     if (B.pendDuel) { if (!['atk','def','crit','ok'].includes(a)) return; const r = B.pendDuel; B.pendDuel = null; r(a); return; }
     if (B.pendEnd && a === 'close') { const r = B.pendEnd; B.pendEnd = null; r(); return; }
     if (!B.pend) return;
+    if (a === 'back') { B.pend.act = null; renderBattle(B); return; }
     if (a === 'unit') {
       if (!B.pend.act) return;
       const u = B.all[+b.dataset.i];
@@ -1277,9 +1407,9 @@ function unitCard(B, u) {
   const target = B.pend && B.pend.act && !dead && foeOf(B, B.pend.u).units.includes(u);
   const col = fcolor(sideOf(B, u).force) || 'var(--muted)';
   return `<button class="unit ${active ? 'active' : ''} ${target ? 'target' : ''} ${dead ? 'dead' : ''}" data-a="unit" data-i="${i}" ${target ? '' : 'tabindex="-1"'}>
-    <div class="top"><b>${esc(u.o.name)}${u.o.id === G.player ? '（你）' : ''}</b><span class="num">${u.gone ? '被擒' : u.troops}</span></div>
+    <div class="top"><b>${esc(u.o.name)}${u.o.id === G.player ? '（你）' : ''}${u.conf ? '・亂' : ''}</b><span class="num">${u.gone ? '被擒' : u.troops}</span></div>
     <div class="hp"><b style="width:${Math.round(100 * u.troops / u.max)}%;background:${col}"></b></div>
-    <small class="muted num">統${u.o.lead} 武${u.o.war} 智${u.o.int}${u.conf ? '・混亂' : ''}</small></button>`;
+    <small class="muted num">統${u.o.lead} 武${u.o.war} 智${u.o.int}</small></button>`;
 }
 function renderBattle(B, ctrlHtml) {
   if (!B.sheet) return;
@@ -1287,32 +1417,29 @@ function renderBattle(B, ctrlHtml) {
   let ctrl = ctrlHtml || '';
   if (!ctrl && B.pend) {
     const u = B.pend.u;
-    ctrl = B.pend.act ? `<div class="row"><b>${esc(u.o.name)}</b>：選擇敵方部隊作為目標<button class="btn small" data-a="back">返回</button></div>`
-      : `<div class="row"><b>${esc(u.o.name)}</b> 的行動：
-        <button class="btn" data-a="atk">攻擊</button><button class="btn" data-a="fire">火計</button><button class="btn" data-a="conf">混亂</button>
-        ${u.o.id >= 0 ? '<button class="btn" data-a="duel">單挑</button>' : ''}
-        <span class="spacer" style="flex:1"></span><button class="btn small" data-a="auto">委任</button><button class="btn small" data-a="retreat">撤退</button></div>`;
+    ctrl = B.pend.act ? `<div class="row"><b>${esc(u.o.name)}</b>：點選敵方部隊作為目標<button class="btn small" data-a="back">返回</button></div>`
+      : `<div class="row"><b>${esc(u.o.name)}</b>
+        <button class="btn small" data-a="atk">攻擊</button><button class="btn small" data-a="fire">火計</button><button class="btn small" data-a="conf">混亂</button>
+        ${u.o.id >= 0 ? '<button class="btn small" data-a="duel">單挑</button>' : ''}
+        <span class="spacer"></span><button class="btn small" data-a="auto">委任</button><button class="btn small" data-a="retreat">撤退</button></div>`;
   }
-  B.sheet.innerHTML = `<div class="bt">
-    <div class="bt-head"><h2>${esc(tc.name)}之戰</h2><span class="muted num">第 ${Math.min(B.round, MAX_ROUND)} / ${MAX_ROUND} 回合・城防 ${tc.def}</span></div>
+  B.sheet.innerHTML = `<div class="bt-head"><h2>${esc(tc.name)}之戰</h2><span class="muted num">第 ${Math.min(B.round, MAX_ROUND)}/${MAX_ROUND} 回合・城防 ${tc.def}</span></div>
     <div class="bt-sides">
-      <div class="bt-side"><h3>攻方・${esc(fname(B.att.force))}（${sumLive(B.att)}）</h3>${B.att.units.map(u => unitCard(B, u)).join('')}</div>
-      <div class="bt-side"><h3>守方・${esc(fname(B.def.force))}（${sumLive(B.def)}）</h3>${B.def.units.map(u => unitCard(B, u)).join('') || '<p class="muted">無人防守</p>'}</div>
+      <div class="bt-side"><h3>攻・${esc(fname(B.att.force))} ${sumLive(B.att)}</h3>${B.att.units.map(u => unitCard(B, u)).join('')}</div>
+      <div class="bt-side"><h3>守・${esc(fname(B.def.force))} ${sumLive(B.def)}</h3>${B.def.units.map(u => unitCard(B, u)).join('') || '<p class="muted">無人防守</p>'}</div>
     </div>
     ${ctrl}
-    <ol class="bt-log">${B.logs.slice(0, 40).map(t => `<li>${esc(t)}</li>`).join('')}</ol></div>`;
-  const back = B.sheet.querySelector('[data-a="back"]');
-  if (back) back.onclick = e => { e.stopPropagation(); B.pend.act = null; renderBattle(B); };
+    <ol class="bt-log">${B.logs.slice(0, 3).map(t => `<li>${esc(t)}</li>`).join('')}</ol>`;
 }
 function askAction(B, u) { return new Promise(res => { B.pend = {u, res, act:null}; renderBattle(B); }); }
 function askYesNo(B, text, y, n) { return new Promise(res => { B.pendYN = res; renderBattle(B, `<div class="row"><b>${esc(text)}</b><button class="btn primary" data-a="yes">${esc(y)}</button><button class="btn" data-a="no">${esc(n)}</button></div>`); }); }
 function duelAsk(B, a, d, st, result) {
   return new Promise(res => {
-    const bar = (o, hp) => `<div><div class="top row" style="justify-content:space-between"><b>${esc(o.name)}</b><span class="num">武力 ${o.war}・體力 ${Math.max(0, Math.round(hp))}</span></div><div class="hp"><b style="width:${clamp(hp, 0, 100)}%;background:var(--seal)"></b></div></div>`;
+    const bar = (o, hp) => `<div><div class="row" style="justify-content:space-between"><b>${esc(o.name)}</b><span class="num">武力 ${o.war}・體力 ${Math.max(0, Math.round(hp))}</span></div><div class="hp"><b style="width:${clamp(hp, 0, 100)}%;background:var(--seal)"></b></div></div>`;
     const btns = result ? `<div class="row"><b>${result === 'draw' ? '不分勝負' : `${esc(result.o.name)} 獲勝！`}</b><button class="btn primary" data-a="ok">繼續</button></div>`
-      : `<div class="row"><button class="btn" data-a="atk">攻擊</button><button class="btn" data-a="def">防守</button><button class="btn" data-a="crit">全力一擊</button><small class="muted">防守可剋制全力一擊，全力一擊壓過攻擊。</small></div>`;
+      : `<div class="row"><button class="btn small" data-a="atk">攻擊</button><button class="btn small" data-a="def">防守</button><button class="btn small" data-a="crit">全力一擊</button><small class="muted">防守剋全力一擊，全力一擊壓過攻擊</small></div>`;
     B.pendDuel = res;
-    renderBattle(B, `<div class="duel"><h3>單挑・第 ${st.r} 回合</h3>${bar(a.o, st.ha)}${bar(d.o, st.hd)}<p class="muted">${esc(st.text || '雙方策馬而出。')}</p>${btns}</div>`);
+    renderBattle(B, `<div class="duel"><h3>單挑・第 ${st.r} 回合</h3>${bar(a.o, st.ha)}${bar(d.o, st.hd)}<p class="muted note">${esc(st.text || '雙方策馬而出。')}</p>${btns}</div>`);
   });
 }
 function battleEnd(B) {
@@ -1326,47 +1453,47 @@ function battleEnd(B) {
 
 // ───────── 介面：主畫面 ─────────
 const app = $('#app');
+const TABN = {map:'地圖', act:'行動', city:'城市', log:'記事'};
+UI.view = 'map'; UI.side = 'act';
+function roleLabel(o) { return o.status === 'free' && G.party && G.party.includes(o.id) ? '同伴' : roleOf(o); }
 function render() {
   if (!G || G.player < 0) return renderTitle();
   if (UI.repick) { UI.repick = false; return renderTitle(true); }
   if (G.over) { G = null; return renderTitle(); }
   if (P().status === 'dead') return renderTitle(true);
-  const p = P(); const r = roleOf(p);
+  UI.mob = isMobile();
+  const p = P(), r = roleOf(p);
   if (UI.sel == null) UI.sel = p.city;
+  if (UI.lastSel !== UI.sel) { UI.pages.people = 0; UI.lastSel = UI.sel; }
+  const c = C(UI.sel);
   app.innerHTML = `
   <header class="bar wrap">
-    <span class="date num">${G.year}年 ${G.month}月</span>
-    <span class="who"><span class="mini-seal">${esc(p.name)}</span><span>${esc(r)}${p.status === 'serve' ? `・${esc(fname(p.force))}・${esc(rankName(p))}` : ''}</span></span>
-    <span class="muted">所在 <b style="color:var(--ink)">${esc(C(p.city).name)}</b></span>
-    <span class="ap" title="行動力"><span class="muted">行動力</span><i><b style="width:${G.ap}%"></b></i><span class="num">${G.ap}</span></span>
-    <span class="muted num">名聲 <b style="color:var(--ink)">${p.fame}</b>・功績 <b style="color:var(--ink)">${p.merit}</b>・私財 <b style="color:var(--ink)">${G.pgold}</b></span>
+    <span class="date num">${G.year}年${G.month}月</span>
+    <span class="who"><span class="mini-seal">${esc(p.name)}</span><span>${esc(r)}<span class="d-only">${p.status === 'serve' ? `・${esc(fname(p.force))}・${esc(rankName(p))}` : ''}</span></span></span>
+    <span class="muted d-only">所在 <b class="ink">${esc(C(p.city).name)}</b></span>
+    <span class="ap" title="行動力"><span class="muted d-only">行動力</span><i><b style="width:${G.ap}%"></b></i><span class="num">${G.ap}</span></span>
     <span class="spacer"></span>
-    <span class="row"><button class="btn small" id="b-forces">勢力</button><button class="btn small" id="b-save">存檔</button><button class="btn small" id="b-help">說明</button><button class="btn small" id="b-quit">標題</button><button class="btn primary" id="b-end">結束本月</button></span>
+    <span class="row"><span class="row d-only"><button class="btn small" id="b-forces">勢力</button><button class="btn small" id="b-save">存檔</button><button class="btn small" id="b-help">說明</button><button class="btn small" id="b-quit">標題</button></span><button class="btn small m-only" id="b-menu">選單</button><button class="btn primary" id="b-end">結束本月</button></span>
   </header>
-  <main class="game">
-    <section class="mapwrap">${mapSvg()}</section>
-    <aside class="side wrap">${sidePanel()}</aside>
+  <main class="game" data-view="${UI.view}">
+    <section class="mapcol">
+      <div class="mapbox">${mapSvg()}</div>
+      <ol class="ticker">${G.log.slice(0, 2).map(l => `<li><time>${l.d}</time>${esc(l.t)}</li>`).join('')}</ol>
+      <div class="cstrip"><span><b>${esc(c.name)}</b> <span class="muted">${esc(fname(c.owner))}・兵 ${fmtN(c.troops)}・${presentIn(c.id).length} 人</span></span><button class="btn small" data-view="city">城市詳情</button></div>
+    </section>
+    <aside class="side">
+      <nav class="stabs">${['act','city','log'].map(k => `<button data-side="${k}" aria-pressed="${UI.side === k}">${TABN[k]}</button>`).join('')}</nav>
+      <div class="pane wrap">${UI.side === 'city' ? cityPane() : UI.side === 'log' ? logPane() : actPane()}</div>
+    </aside>
   </main>
-  <section class="logwrap wrap"><h3 style="margin-bottom:6px">記事</h3><ol class="log">${G.log.slice(0, 80).map(l => `<li class="${l.me ? 'me' : ''}"><time>${l.d}</time><span>${esc(l.t)}</span></li>`).join('')}</ol></section>`;
-  app.querySelectorAll('.city').forEach(g => {
-    const pickCity = () => { UI.sel = +g.dataset.c; render(); };
-    g.addEventListener('click', pickCity);
-    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCity(); } });
-  });
-  $('#b-end').onclick = endMonth;
-  $('#b-save').onclick = () => toast(saveTo(SAVE_KEY) ? '已存檔。' : '無法存檔（瀏覽器不允許儲存）。');
-  $('#b-help').onclick = help;
-  $('#b-forces').onclick = forcesView;
-  $('#b-quit').onclick = async () => { if (await ask('回到標題畫面？未存檔的進度會保留在自動存檔。', '回到標題', '取消')) { saveTo(AUTO_KEY); G = null; render(); } };
-  app.querySelectorAll('[data-pa]').forEach(b => b.onclick = () => doPersonal(b.dataset.pa));
-  app.querySelectorAll('[data-ca]').forEach(b => b.onclick = () => doCommand(b.dataset.ca, UI.sel));
-  app.querySelectorAll('[data-oid]').forEach(b => b.onclick = () => officerView(+b.dataset.oid));
+  <nav class="mnav">${['map','act','city','log'].map(k => `<button data-view="${k}" aria-pressed="${UI.view === k}">${TABN[k]}</button>`).join('')}</nav>`;
+  fitMap(); fitLists(app);
 }
 function mapSvg() {
   const p = P();
   const zhou = {};
   G.cities.forEach(c => { (zhou[c.zhou] = zhou[c.zhou] || []).push(c); });
-  let s = `<svg id="map" viewBox="0 0 1000 720" role="img" aria-label="中國輿圖"><rect class="m-land" width="1000" height="720"/><path class="m-sea" d="${SEA}"/>`;
+  let s = `<svg id="map" viewBox="0 0 1000 720" role="img" aria-label="中國輿圖"><rect class="m-land" x="-500" y="-500" width="2000" height="1720"/><path class="m-sea" d="${SEA}"/>`;
   Object.entries(zhou).forEach(([z, cs]) => { const x = cs.reduce((a, c) => a + c.x, 0) / cs.length, y = cs.reduce((a, c) => a + c.y, 0) / cs.length; s += `<text class="m-zhou" x="${x}" y="${y + 14}">${z}</text>`; });
   RIVERS.forEach(([n, d, lx, ly]) => { s += `<path class="m-river" d="${d}"/><text class="m-rlabel" x="${lx}" y="${ly}">${n}</text>`; });
   ROADS.split(' ').forEach(r => { const [a, b] = r.split('-').map(cityIdx); s += `<line class="m-road" x1="${C(a).x}" y1="${C(a).y}" x2="${C(b).x}" y2="${C(b).y}"/>`; });
@@ -1384,99 +1511,192 @@ function mapSvg() {
   });
   return s + '</svg>';
 }
-function sidePanel() {
-  const p = P(), r = roleOf(p), c = C(UI.sel);
-  const stats = o => `<div class="stats">${STATK.map(s => `<div><small>${STAT[s]}</small><b>${o[s]}</b></div>`).join('')}</div>`;
-  let h = `<section class="sec"><h3>本人<span class="muted" style="font-weight:400;font-size:13px">${esc(p.name)}・${age(p)} 歲・${esc(r)}</span></h3>${stats(p)}
-    <div class="acts">${personalActs().map(a => `<button class="btn small" data-pa="${a.k}" ${a.dis || G.ap < a.cost ? 'disabled' : ''} title="${esc(a.dis || (a.cost ? `行動力 ${a.cost}` : ''))}">${a.n}${a.cost ? `<small class="muted"> ${a.cost}</small>` : ''}</button>`).join('')}</div>
-    ${personalActs().filter(a => a.dis).map(a => `<small class="muted">${a.n}：${esc(a.dis)}</small>`).join('<br>')}</section>`;
+// 地圖放不下時放大一部分並可拖曳（拖曳只移動地圖，頁面不捲動）
+function fitMap() {
+  const svg = $('#map'); if (!svg) return;
+  const box = svg.parentElement, cw = box.clientWidth, ch = box.clientHeight;
+  if (!cw || !ch) return;
+  const meet = Math.min(cw / 1000, ch / 720);
+  if (meet >= 0.6) { svg.setAttribute('viewBox', '0 0 1000 720'); UI.vb = null; return; }
+  const s = Math.min(0.9, Math.max(cw / 1000, ch / 720, meet * 1.6));
+  const w = Math.min(1000, cw / s), h = Math.min(720, ch / s);
+  let v = UI.vb;
+  if (!v || Math.abs(v.w - w) > 1 || Math.abs(v.h - h) > 1) { const c = C(UI.sel ?? P().city); v = {x:c.x - w / 2, y:c.y - h / 2, w, h}; }
+  v.x = clamp(v.x, 0, 1000 - w); v.y = clamp(v.y, 0, 720 - h); v.s = s; UI.vb = v;
+  svg.setAttribute('viewBox', `${v.x} ${v.y} ${w} ${h}`);
+}
+let drag = null;
+document.addEventListener('pointerdown', e => { if (!UI.vb || !e.target.closest('#map')) return; drag = {x:e.clientX, y:e.clientY, vx:UI.vb.x, vy:UI.vb.y, moved:false}; });
+document.addEventListener('pointermove', e => {
+  if (!drag || !UI.vb) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 6) drag.moved = true;
+  if (!drag.moved) return;
+  const v = UI.vb; v.x = clamp(drag.vx - dx / v.s, 0, 1000 - v.w); v.y = clamp(drag.vy - dy / v.s, 0, 720 - v.h);
+  const svg = $('#map'); if (svg) svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+});
+const endDrag = () => { if (drag && drag.moved) UI.dragged = Date.now(); drag = null; };
+document.addEventListener('pointerup', endDrag); document.addEventListener('pointercancel', endDrag);
+
+function actPane() {
+  const p = P(), r = roleOf(p);
+  const acts = personalActs();
+  const reasons = acts.filter(a => a.dis).map(a => `${a.n}：${a.dis}`).join('；');
+  let h = `<section class="sec"><h3>本人<small>${esc(p.name)}・${age(p)} 歲・${esc(r)}</small></h3>
+    <div class="stats">${STATK.map(s => `<div><small>${STAT[s]}</small><b>${p[s]}</b></div>`).join('')}</div>
+    <div class="kv"><div><span>名聲</span>${p.fame}</div><div><span>功績</span>${p.merit}</div><div><span>私財</span>${G.pgold}</div>${r === '在野' ? `<div><span>義勇兵</span>${G.ptroops}</div>` : `<div><span>官位</span>${esc(rankName(p))}</div>`}<div><span>所在</span>${esc(C(p.city).name)}</div><div><span>行動力</span>${G.ap}/${AP_MAX}</div></div>
+    <div class="acts">${acts.map(a => `<button class="btn small" data-pa="${a.k}" ${a.dis || G.ap < a.cost ? 'disabled' : ''} title="${esc(a.dis || (a.cost ? `行動力 ${a.cost}` : ''))}">${a.n}${a.cost ? `<small> ${a.cost}</small>` : ''}</button>`).join('')}</div>
+    ${reasons ? `<p class="note" title="${esc(reasons)}">${esc(reasons)}</p>` : ''}</section>`;
+  if (r === '在野') {
+    const mem = partyMembers();
+    h += `<section class="sec grow"><h3>同伴<small>${mem.length}/${PARTY_MAX}・私下結伴，一同行動</small></h3>
+      ${mem.length ? statHead('姓名') + mem.map(o => `<div class="orow" style="cursor:default"><span class="nm"><button class="btn small" data-kick="${o.id}" title="請${esc(o.name)}離隊">離隊</button> ${esc(o.name)} <small class="muted">親密 ${G.rel[o.id] || 0}</small></span>${statCells(o)}</div>`).join('')
+        : '<p class="muted">在野時可「邀請同行」志同道合的在野人士。同伴隨你移動，一同討伐賊寇、招募義勇、鍛鍊；求仕或舉兵時一起加入。</p>'}</section>`;
+  }
+  return h;
+}
+function cityPane() {
+  const p = P(), c = C(UI.sel);
   const gov = c.gov != null ? O(c.gov).name : '—';
-  h += `<section class="sec"><h3>${esc(c.name)}<span class="muted" style="font-weight:400;font-size:13px">${esc(c.zhou)}・${c.owner != null ? `<span class="dot" style="background:${fcolor(c.owner)}"></span>${esc(fname(c.owner))}` : '無主'}・太守 ${esc(gov)}${c.owner != null && c.delegate ? '・委任' : ''}</span></h3>
+  let h = `<section class="sec"><h3>${esc(c.name)}<small>${esc(c.zhou)}・${c.owner != null ? `<span class="dot" style="background:${fcolor(c.owner)}"></span>${esc(fname(c.owner))}` : '無主'}・太守 ${esc(gov)}${c.owner != null && c.delegate ? '・委任' : ''}</small></h3>
     <div class="kv"><div><span>金</span>${c.gold}</div><div><span>糧</span>${c.food}</div><div><span>兵</span>${c.troops}</div><div><span>訓練</span>${c.train}</div>
-    <div><span>農業</span>${c.farm}/${c.farmMax}</div><div><span>商業</span>${c.comm}/${c.commMax}</div><div><span>城防</span>${c.def}/${c.defMax}</div><div><span>治安</span>${c.order}</div><div><span>人口</span>${fmtN(c.pop)}</div></div>`;
-  const people = presentIn(c.id).sort((a, b) => ({主公:0,太守:1,武將:2,俘虜:3,在野:4}[roleOf(a)] - {主公:0,太守:1,武將:2,俘虜:3,在野:4}[roleOf(b)]) || total(b) - total(a));
-  h += `<div class="orow muted" style="cursor:default"><span class="nm">人物（${people.length}）</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>
-    <div class="olist">${people.map(o => `<button class="orow ${o.done ? 'done' : ''}" data-oid="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(roleOf(o))}${o.status === 'serve' && o.force !== c.owner ? `・${esc(fname(o.force))}` : ''}${o.done ? '・已行動' : ''}</small></span>${statCells(o)}</button>`).join('') || '<p class="muted">沒有人。</p>'}</div></section>`;
+    <div><span>農業</span>${c.farm}/${c.farmMax}</div><div><span>商業</span>${c.comm}/${c.commMax}</div><div><span>城防</span>${c.def}/${c.defMax}</div><div><span>治安</span>${c.order}</div><div><span>人口</span>${fmtN(c.pop)}</div>${UI.sel !== p.city ? '<div><button class="btn small" id="b-home">回到所在城市</button></div>' : ''}</div></section>`;
   if (canCommand(c.id)) {
     const lord = isRuler(p);
     const cmds = [['task','指派內政'],['attack','出征'],['recruit','登用']];
     if (lord) cmds.push(['appoint','任命太守'],['transfer','調動'],['transport','輸送'],['reward','賞賜'],['delegate', c.delegate ? '取消委任' : '委任']);
-    h += `<section class="sec"><h3>軍令<span class="muted" style="font-weight:400;font-size:13px">${lord ? '主公可向任何己方城市下令' : '太守只可統領本城'}</span></h3><div class="acts">${cmds.map(([k, n]) => `<button class="btn small" data-ca="${k}">${n}</button>`).join('')}</div>
-      <small class="muted">下令不耗行動力，但每名武將每月只可行動一次。${lord ? '委任中的城市，月底由太守處理餘下內政。' : ''}</small></section>`;
-  } else if (UI.sel !== p.city) {
-    h += `<p class="muted">點選地圖上的城市查看情報。<button class="btn small" id="b-home" onclick="UI.sel=P().city;render()">回到所在城市</button></p>`;
+    h += `<section class="sec"><h3>軍令<small>${lord ? '主公可向任何己方城市下令' : '太守只可統領本城'}</small></h3><div class="acts">${cmds.map(([k, n]) => `<button class="btn small" data-ca="${k}">${n}</button>`).join('')}</div>
+      <p class="note">下令不耗行動力；每名武將每月只可行動一次。</p></section>`;
   }
+  const order = {主公:0,太守:1,武將:2,俘虜:3,同伴:4,在野:5};
+  const people = presentIn(c.id).sort((a, b) => (order[roleLabel(a)] - order[roleLabel(b)]) || total(b) - total(a));
+  const rows = people.map(o => `<button class="orow ${o.done ? 'done' : ''}" data-oid="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(roleLabel(o))}${o.status === 'serve' && o.force !== c.owner ? `・${esc(fname(o.force))}` : ''}${o.done ? '・已行動' : ''}</small></span>${statCells(o)}</button>`);
+  h += `<section class="sec grow">${listBox('people', rows, statHead(`人物（${people.length}）`), '沒有人。')}</section>`;
   return h;
+}
+function logPane() {
+  const rows = G.log.map(l => `<div class="lrow ${l.me ? 'me' : ''}"><time>${l.d}</time><span>${esc(l.t)}</span></div>`);
+  return `<section class="sec grow">${listBox('log', rows, '', '尚無記事。')}</section>`;
 }
 function officerView(id) {
   const o = O(id);
-  const bars = STATK.map(s => `<div class="row" style="gap:10px"><span style="width:3em">${STAT[s]}</span><span class="hp" style="flex:1;height:8px"><b style="width:${o[s]}%;background:var(--ink)"></b></span><b class="num" style="width:2.5em;text-align:right">${o[s]}</b></div>`).join('');
+  const bars = STATK.map(s => `<div class="row" style="gap:10px;flex-wrap:nowrap"><span style="width:3em">${STAT[s]}</span><span class="hp" style="flex:1;height:8px"><b style="width:${o[s]}%;background:var(--ink)"></b></span><b class="num" style="width:2.5em;text-align:right">${o[s]}</b></div>`).join('');
   const m = modal(`<h2>${esc(o.name)}</h2>
-    <p class="muted">${age(o)} 歲・${esc(roleOf(o))}${o.status === 'serve' ? `・${esc(fname(o.force))}・${esc(rankName(o))}` : ''}・出身${esc(C(o.home).name)}・現在${esc(C(o.city).name)}</p>
-    <div style="display:grid;gap:4px">${bars}</div>
+    <p class="muted">${age(o)} 歲・${esc(roleLabel(o))}${o.status === 'serve' ? `・${esc(fname(o.force))}・${esc(rankName(o))}` : ''}・出身${esc(C(o.home).name)}・現在${esc(C(o.city).name)}</p>
+    <div style="display:grid;gap:3px">${bars}</div>
     <div class="kv"><div><span>名聲</span>${o.fame}</div><div><span>功績</span>${o.merit}</div>${o.status === 'serve' && !isRuler(o) ? `<div><span>忠誠</span>${o.loyalty}</div>` : ''}${o.id !== G.player ? `<div><span>與你親密</span>${G.rel[o.id] || 0}</div>` : ''}</div>
     <div class="row"><button class="btn">關閉</button></div>`);
   m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
 }
 function forcesView() {
-  const rows = G.forces.filter(f => f.alive).map(f => ({f, cs:forceCities(f.id), offs:servants(f.id)})).sort((a, b) => b.cs.length - a.cs.length);
-  const m = modal(`<h2>群雄勢力</h2><div class="tbl-wrap" style="max-height:60vh"><table><thead><tr><th>勢力</th><th>城</th><th>武將</th><th>兵力</th><th>本城</th></tr></thead><tbody>${rows.map(({f, cs, offs}) => `<tr${f.id === P().force && P().status === 'serve' ? ' class="on"' : ''}><td><span class="dot" style="background:${f.color}"></span>${esc(fname(f.id))}</td><td>${cs.length}</td><td>${offs.length}</td><td>${cs.reduce((s, c) => s + c.troops, 0)}</td><td>${esc(C(O(f.ruler).city).name)}</td></tr>`).join('')}</tbody></table></div><div class="row"><button class="btn">關閉</button></div>`, 'wide');
-  m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+  const data = G.forces.filter(f => f.alive).map(f => ({f, cs:forceCities(f.id), offs:servants(f.id)})).sort((a, b) => b.cs.length - a.cs.length);
+  const grid = 'grid-template-columns:minmax(0,1fr) 3em 3em 5em';
+  const rows = data.map(({f, cs, offs}) => `<div class="orow" style="${grid};cursor:default${f.id === P().force && P().status === 'serve' ? ';background:var(--land2)' : ''}"><span class="nm"><span class="dot" style="background:${f.color}"></span>${esc(fname(f.id))}</span><span>${cs.length}</span><span>${offs.length}</span><span>${cs.reduce((s, c) => s + c.troops, 0)}</span></div>`);
+  UI.pages.forces = 0;
+  const m = modal(`<h2>群雄勢力</h2>${listBox('forces', rows, `<div class="orow head" style="${grid}"><span class="nm">勢力</span><span>城</span><span>武將</span><span>兵力</span></div>`)}<div class="row"><button class="btn">關閉</button></div>`, 'tall');
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('.btn')) m.remove(); });
 }
 function help() {
-  const m = modal(`<h2>遊戲說明</h2>
-    <p>你可以選擇任何一名武將，以其身分在亂世中生存。身分會隨你的作為改變：</p>
-    <p><b>在野</b>：拜訪名士、鍛鍊能力、討伐賊寇累積名聲。可向所在城市的君主求仕；名聲達 ${RISE_FAME} 後，可在無主城市舉兵，親密度 50 以上的在野人士會追隨你。</p>
-    <p><b>武將</b>：親自執行內政累積功績，功績提升官位。功績與能力夠高，主公會任命你為太守。主公出兵時，你可能被派隨軍出陣。亦可下野重新選擇主公。</p>
-    <p><b>太守</b>：統領本城武將，可指派內政、出征相鄰城市、登用人才，亦可脫離主公獨立。</p>
-    <p><b>主公</b>：向所有己方城市下令，任命太守、調動武將、輸送物資、處置俘虜。統一全部 ${G.cities.length} 座城市即可平定天下。</p>
-    <p><b>戰鬥</b>：每回合為每支部隊選擇攻擊、火計、混亂或單挑。智力高則計策易成；武力高可單挑擒將。攻城時守方受城防保護。${MAX_ROUND} 回合內未能攻下即撤兵。</p>
-    <p><b>時間</b>：每月有 ${AP_MAX} 行動力供本人行動；下令不耗行動力。每月結算金錢，七月收糧。武將會依史實年份登場及逝世（可在開局時選擇延長壽命）。</p>
-    <p class="muted">每月自動存檔；「存檔」按鈕另存一份。資料只存在此瀏覽器。</p>
-    <div class="row"><button class="btn primary">明白</button></div>`);
-  m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+  const pages = [
+    `<p>你可以選擇任何一名武將，以其身分在亂世中生存。身分會隨你的作為改變：在野、武將、太守、主公。</p><p><b>在野</b>：拜訪、鍛鍊、討伐賊寇累積名聲；向所在城市的君主求仕。名聲達 ${RISE_FAME}，或有同伴兩人及義勇兵一千，即可在無主城市舉兵。</p>`,
+    `<p><b>同伴</b>：在野時可「邀請同行」志同道合的在野人士，最多 ${PARTY_MAX} 人。同伴隨你移動；討伐賊寇與招募義勇時一同出力；鍛鍊時一同進步。求仕或舉兵時，同伴與義勇兵一起加入。</p>`,
+    `<p><b>武將</b>：親自執行內政累積功績，功績提升官位；功績與能力夠高會被任命為太守。主公出兵時你可能隨軍出陣。亦可下野。</p><p><b>太守</b>：統領本城武將，可指派內政、出征相鄰城市、登用人才，亦可脫離主公獨立。</p>`,
+    `<p><b>主公</b>：向所有己方城市下令，任命太守、調動武將、輸送物資、處置俘虜。統一全部 ${G.cities.length} 座城市即可平定天下。</p><p><b>戰鬥</b>：每回合為部隊選擇攻擊、火計、混亂或單挑。智力高計策易成，武力高可單挑擒將。${MAX_ROUND} 回合內攻不下即撤兵。</p>`,
+    `<p><b>時間</b>：每月有 ${AP_MAX} 行動力供本人行動，下令不耗行動力。每月收金，七月收糧。武將依史實年份登場與逝世。</p><p class="muted">每月自動存檔；「存檔」另存一份。資料只存在此瀏覽器。地圖放不下時可拖曳移動。</p>`,
+  ];
+  let i = 0;
+  const m = modal('');
+  const draw = () => { m.firstElementChild.innerHTML = `<h2>遊戲說明 <small class="muted num" style="font:400 13px var(--font-b)">${i + 1}/${pages.length}</small></h2>${pages[i]}<div class="row"><button class="btn" data-h="-1" ${i ? '' : 'disabled'}>上一頁</button><button class="btn" data-h="1" ${i < pages.length - 1 ? '' : 'disabled'}>下一頁</button><span class="spacer"></span><button class="btn primary" data-h="0">明白</button></div>`; };
+  draw();
+  m.addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (e.target === m || (b && b.dataset.h === '0')) { m.remove(); return; } if (b) { i += +b.dataset.h; draw(); } });
 }
+async function menu() {
+  const k = await choose('選單', [{label:'勢力一覽', value:'forces'}, {label:'存檔', value:'save'}, {label:'遊戲說明', value:'help'}, {label:'回到標題', value:'quit'}]);
+  if (k === 'forces') forcesView(); else if (k === 'save') saveNow(); else if (k === 'help') help(); else if (k === 'quit') quitToTitle();
+}
+const saveNow = () => toast(saveTo(SAVE_KEY) ? '已存檔。' : '無法存檔（瀏覽器不允許儲存）。');
+async function quitToTitle() { if (await ask('回到標題畫面？目前進度會留在自動存檔。', '回到標題', '取消')) { saveTo(AUTO_KEY); G = null; render(); } }
+
+// 所有按鈕集中處理（清單翻頁後新生成的列亦適用）
+app.addEventListener('click', e => {
+  const t = e.target.closest('button,[data-c]'); if (!t || t.disabled) return;
+  const d = t.dataset;
+  if (d.c != null) { if (Date.now() - (UI.dragged || 0) < 300) return; UI.sel = +d.c; if (!UI.mob) UI.side = 'city'; render(); return; }
+  if (d.pa) return doPersonal(d.pa);
+  if (d.ca) return doCommand(d.ca, UI.sel);
+  if (d.oid) return officerView(+d.oid);
+  if (d.kick) { const o = O(+d.kick); G.party = G.party.filter(id => id !== o.id); log(`${o.name} 離隊，各奔前程。`, true); return render(); }
+  if (d.side) { UI.side = d.side; return render(); }
+  if (d.view) { UI.view = d.view; if (d.view !== 'map') UI.side = d.view; return render(); }
+  if (d.sc != null) { UI.sc = +d.sc; UI.pick = null; UI.pages.title = 0; return renderTitle(); }
+  if (d.life) { UI.life = d.life; return renderTitle(); }
+  if (d.tab) { UI.tab = d.tab; UI.pages.title = 0; return updateTitle(); }
+  if (d.sort != null) { UI.sort = d.sort || null; UI.pages.title = 0; return updateTitle(); }
+  if (d.pick) { UI.pick = +d.pick; return updateTitle(); }
+  switch (t.id) {
+    case 'b-end': return endMonth();
+    case 'b-save': return saveNow();
+    case 'b-help': return help();
+    case 'b-forces': return forcesView();
+    case 'b-quit': return quitToTitle();
+    case 'b-menu': return menu();
+    case 'b-home': UI.sel = P().city; return render();
+    case 't-start': if (UI.pick != null) startAs(UI.pick); return;
+    case 't-auto': if (loadFrom(AUTO_KEY)) render(); return;
+    case 't-load': if (loadFrom(SAVE_KEY)) render(); return;
+  }
+});
+app.addEventListener('dblclick', e => { const t = e.target.closest('[data-pick]'); if (t) startAs(+t.dataset.pick); });
+app.addEventListener('keydown', e => { const g = e.target.closest('[data-c]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); UI.sel = +g.dataset.c; if (!UI.mob) UI.side = 'city'; render(); } });
+app.addEventListener('input', e => { if (e.target.id === 't-q') { UI.q = e.target.value.trim(); UI.pages.title = 0; updateTitle(); } });
 
 // ───────── 介面：標題 ─────────
+function titleList() {
+  const list = G.officers.filter(o => ['serve','free'].includes(o.status))
+    .filter(o => UI.tab === 'all' || roleOf(o) === UI.tab || (UI.tab === '武將' && roleOf(o) === '太守'))
+    .filter(o => !UI.q || o.name.includes(UI.q) || (o.status === 'serve' && fname(o.force).includes(UI.q)));
+  const ord = {主公:0,太守:1,武將:2,在野:3};
+  return list.sort((a, b) => UI.sort ? b[UI.sort] - a[UI.sort] : (ord[roleOf(a)] - ord[roleOf(b)]) || total(b) - total(a));
+}
+function titleHead() {
+  return `<div class="trow head"><button data-sort="">姓名</button><span>身分</span><span>勢力・所在</span>${STATK.map(s => `<button data-sort="${s}">${UI.mob ? STAT[s][0] : STAT[s]}${UI.sort === s ? '▾' : ''}</button>`).join('')}<span class="age">年齡</span></div>`;
+}
+function titleRows() {
+  const tag = o => { const r = roleOf(o); return `<span class="tag ${r === '主公' ? 'lord' : r === '太守' ? 'gov' : r === '在野' ? 'free' : ''}">${r}</span>`; };
+  return titleList().map(o => `<button class="trow ${UI.pick === o.id ? 'on' : ''}" data-pick="${o.id}"><b>${esc(o.name)}</b><span>${tag(o)}</span><span>${o.status === 'serve' ? `<span class="dot" style="background:${fcolor(o.force)}"></span>${esc(fname(o.force))}・` : ''}${esc(C(o.city).name)}</span>${STATK.map(s => `<span>${o[s]}</span>`).join('')}<span class="age">${age(o)}</span></button>`);
+}
+function startLabel() { const ok = UI.pick != null && titleList().some(o => o.id === UI.pick); return {ok, text:ok ? `以${O(UI.pick).name}開始` : '請先選擇武將'}; }
+function updateTitle() {
+  if (!$('.title')) return;
+  const head = $('.trow.head'); if (head) head.outerHTML = titleHead();
+  app.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tab === UI.tab));
+  fillList($('[data-list="title"]'));
+  const s = startLabel(), b = $('#t-start'); b.disabled = !s.ok; b.textContent = s.text;
+}
 function renderTitle(repick) {
   if (!repick) newGame(UI.sc, UI.life);
+  UI.mob = isMobile();
   const hasAuto = !!readSave(AUTO_KEY), hasSave = !!readSave(SAVE_KEY);
   const S = SCENARIOS[G.sc];
-  const list = G.officers.filter(o => ['serve','free'].includes(o.status) && (!repick || true))
-    .filter(o => UI.tab === 'all' || roleOf(o) === UI.tab || (UI.tab === '武將' && roleOf(o) === '太守'))
-    .filter(o => !UI.q || o.name.includes(UI.q) || fname(o.status === 'serve' ? o.force : null).includes(UI.q));
-  const sk = UI.sort;
-  list.sort((a, b) => sk ? b[sk] - a[sk] : (({主公:0,太守:1,武將:2,在野:3}[roleOf(a)] - {主公:0,太守:1,武將:2,在野:3}[roleOf(b)]) || total(b) - total(a)));
-  const tag = o => { const r = roleOf(o); return `<span class="tag ${r === '主公' ? 'lord' : r === '太守' ? 'gov' : r === '在野' ? 'free' : ''}">${r}</span>`; };
+  const s = startLabel();
   app.innerHTML = `<div class="title wrap">
-    <div class="title-head"><div class="big-seal">亂世錄</div><div style="display:grid;gap:8px"><h1 style="font-size:clamp(28px,5vw,44px)">三國亂世錄</h1><p class="muted">選擇任何一名武將，從在野之士、一介武將、一城太守到一方主公，走出自己的三國。</p>
-      ${!repick && (hasAuto || hasSave) ? `<div class="row">${hasAuto ? '<button class="btn" id="t-auto">繼續（自動存檔）</button>' : ''}${hasSave ? '<button class="btn" id="t-load">讀取存檔</button>' : ''}</div>` : ''}</div></div>
-    ${repick ? `<p><b>${G.year}年${G.month}月</b>：選擇一名在世武將，繼續這個天下。</p>` : `<div class="sec"><div class="label">劇本</div><div class="scen">${SCENARIOS.map((s, i) => `<button data-sc="${i}" aria-pressed="${i === G.sc}"><span class="muted num">${s.year}年1月</span><b>${s.name}</b><span class="muted">${s.desc}</span></button>`).join('')}</div>
-      <div class="row"><span class="label">武將壽命</span><div class="tabs"><button data-life="hist" aria-pressed="${UI.life === 'hist'}">史實</button><button data-life="long" aria-pressed="${UI.life === 'long'}">延長十五年</button></div></div></div>`}
-    <div class="picker"><div class="label">選擇你的武將${repick ? '' : `・${S.name}`}</div>
-      <div class="row"><div class="tabs">${[['all','全部'],['主公','君主'],['武將','武將'],['在野','在野']].map(([k, n]) => `<button data-tab="${k}" aria-pressed="${UI.tab === k}">${n}</button>`).join('')}</div><input type="search" id="t-q" placeholder="搜尋姓名或勢力" value="${esc(UI.q)}"></div>
-      <div class="tbl-wrap"><table><thead><tr><th data-sort="">姓名</th><th data-sort="">身分</th><th data-sort="">勢力・所在</th>${STATK.map(s => `<th data-sort="${s}">${STAT[s]}${UI.sort === s ? ' ▾' : ''}</th>`).join('')}<th>年齡</th></tr></thead>
-      <tbody>${list.map(o => `<tr data-pick="${o.id}" class="${UI.pick === o.id ? 'on' : ''}"><td><b>${esc(o.name)}</b></td><td>${tag(o)}</td><td>${o.status === 'serve' ? `<span class="dot" style="background:${fcolor(o.force)}"></span>${esc(fname(o.force))}・` : ''}${esc(C(o.city).name)}</td>${STATK.map(s => `<td>${o[s]}</td>`).join('')}<td>${age(o)}</td></tr>`).join('')}</tbody></table></div>
-      <div class="row"><button class="btn primary" id="t-start" ${UI.pick == null || !list.some(o => o.id === UI.pick) ? 'disabled' : ''}>${UI.pick != null && list.some(o => o.id === UI.pick) ? `以${esc(O(UI.pick).name)}開始` : '請先選擇武將'}</button><small class="muted">能力數值為本作自訂，供遊戲平衡之用。</small></div>
-    </div></div>`;
-  const rerender = () => renderTitle(repick);
-  app.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => { UI.sc = +b.dataset.sc; UI.pick = null; renderTitle(); });
-  app.querySelectorAll('[data-life]').forEach(b => b.onclick = () => { UI.life = b.dataset.life; renderTitle(); });
-  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { UI.tab = b.dataset.tab; rerender(); });
-  app.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { UI.sort = b.dataset.sort || null; rerender(); });
-  app.querySelectorAll('[data-pick]').forEach(r => { r.onclick = () => { UI.pick = +r.dataset.pick; rerender(); }; r.ondblclick = () => startAs(+r.dataset.pick); });
-  const q = $('#t-q'); q.oninput = () => { UI.q = q.value.trim(); const pos = q.selectionStart; rerender(); const n = $('#t-q'); n.focus(); n.setSelectionRange(pos, pos); };
-  $('#t-start').onclick = () => { if (UI.pick != null) startAs(UI.pick); };
-  const la = $('#t-auto'), ls = $('#t-load');
-  if (la) la.onclick = () => { if (loadFrom(AUTO_KEY)) render(); };
-  if (ls) ls.onclick = () => { if (loadFrom(SAVE_KEY)) render(); };
+    <div class="title-head"><span class="big-seal">亂世錄</span><h1>三國亂世錄</h1><p class="muted">選擇任何一名武將，從在野之士、一介武將、一城太守到一方主公，走出自己的三國。</p>
+      ${!repick && (hasAuto || hasSave) ? `<span class="row">${hasAuto ? '<button class="btn small" id="t-auto">繼續遊戲</button>' : ''}${hasSave ? '<button class="btn small" id="t-load">讀取存檔</button>' : ''}</span>` : ''}</div>
+    ${repick ? `<p class="tctl"><b>${G.year}年${G.month}月</b>：選擇一名在世武將，繼續這個天下。</p>` : `<div class="scen">${SCENARIOS.map((sc, i) => `<button data-sc="${i}" aria-pressed="${i === G.sc}"><span class="muted num">${sc.year}年1月</span><b>${sc.name}</b><span class="desc">${sc.desc}</span></button>`).join('')}</div>`}
+    <div class="row tctl">${repick ? '' : `<div class="tabs" title="武將壽命"><button data-life="hist" aria-pressed="${UI.life === 'hist'}">史實壽命</button><button data-life="long" aria-pressed="${UI.life === 'long'}">延長十五年</button></div>`}
+      <div class="tabs">${[['all','全部'],['主公','君主'],['武將','武將'],['在野','在野']].map(([k, n]) => `<button data-tab="${k}" aria-pressed="${UI.tab === k}">${n}</button>`).join('')}</div>
+      <input type="search" id="t-q" placeholder="搜尋姓名或勢力" value="${esc(UI.q)}" aria-label="搜尋武將"></div>
+    <div class="listbox">${listBox('title', titleRows, titleHead(), '找不到符合的武將。')}</div>
+    <div class="row tstart"><button class="btn primary" id="t-start" ${s.ok ? '' : 'disabled'}>${esc(s.text)}</button><span class="muted d-only" style="font-size:12px">${repick ? '' : `${S.name}・`}點選武將後開始；能力數值為本作自訂。</span></div>
+  </div>`;
+  fitLists(app);
 }
 
 // ───────── 存檔 ─────────
 function saveTo(k) { try { localStorage.setItem(k, JSON.stringify(G)); return true; } catch (e) { return false; } }
 function readSave(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function loadFrom(k) {
-  try { const s = readSave(k); const g = s && JSON.parse(s); if (!g || !g.cities || g.player < 0) return false; G = g; UI.sel = P().city; return true; }
+  try { const s = readSave(k); const g = s && JSON.parse(s); if (!g || !g.cities || g.player < 0) return false; G = g; G.party = G.party || []; G.ptroops = G.ptroops || 0; UI.sel = P().city; UI.vb = null; return true; }
   catch (e) { toast('存檔損壞，無法讀取。'); return false; }
 }
 
