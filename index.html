@@ -1,0 +1,1486 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>三國亂世錄</title>
+<meta name="description" content="瀏覽器三國策略遊戲：以任何武將身分出發，在野、仕官、太守、主公皆可。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 版面：左為青綠設色輿圖，右為政令卷；戰鬥與對話以覆蓋卷軸呈現 */
+:root{
+  --paper:#e7ebe0; --panel:#f4f6ef; --ink:#1d231e; --muted:#5d695f; --line:#c2cbbd;
+  --seal:#ad2a1f; --seal-ink:#fff8f0; --gold:#8a6a1c;
+  --land:#dbe3cf; --land2:#cbd6bd; --sea:#b4c9c6; --river:#7ea3a5; --road:#9f9a83;
+  --good:#2d7a4c; --bad:#ad2a1f; --shade:rgba(20,28,24,.55);
+  --font-d:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --font-b:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#131a1a; --panel:#1a2222; --ink:#e2e6dc; --muted:#98a49b; --line:#334140;
+  --seal:#d9473b; --seal-ink:#fff8f0; --gold:#d2b468;
+  --land:#1c2725; --land2:#22302c; --sea:#0e1618; --river:#2e575a; --road:#5d6457;
+  --good:#5cb882; --bad:#e2675b; --shade:rgba(0,0,0,.65); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#131a1a; --panel:#1a2222; --ink:#e2e6dc; --muted:#98a49b; --line:#334140;
+  --seal:#d9473b; --seal-ink:#fff8f0; --gold:#d2b468;
+  --land:#1c2725; --land2:#22302c; --sea:#0e1618; --river:#2e575a; --road:#5d6457;
+  --good:#5cb882; --bad:#e2675b; --shade:rgba(0,0,0,.65); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.6 var(--font-b);-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--font-d);font-weight:700;margin:0;text-wrap:balance;line-height:1.3}
+h2{font-size:20px} h3{font-size:15px}
+button{font:inherit;color:inherit}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.btn{font-family:var(--font-d);font-weight:700;border:1px solid var(--ink);background:transparent;padding:6px 14px;border-radius:2px;cursor:pointer;letter-spacing:.08em;min-height:34px}
+.btn:hover:not(:disabled){background:var(--ink);color:var(--paper)}
+.btn:focus-visible,.city:focus-visible,input:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn.primary{background:var(--seal);border-color:var(--seal);color:var(--seal-ink)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.1);background:var(--seal);color:var(--seal-ink)}
+.btn.small{padding:3px 9px;min-height:28px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* 標題畫面 */
+.title{max-width:1080px;margin:0 auto;padding-block:40px 60px;display:grid;gap:28px}
+.title-head{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}
+.big-seal{font-family:var(--font-d);font-weight:900;font-size:clamp(40px,8vw,72px);line-height:1;writing-mode:vertical-rl;background:var(--seal);color:var(--seal-ink);padding:14px 10px;letter-spacing:.12em;border-radius:3px}
+.title-head p{max-width:46ch;margin:0}
+.label{font-size:12px;letter-spacing:.18em;color:var(--muted);font-weight:700}
+.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.scen button{text-align:left;border:1px solid var(--line);background:var(--panel);padding:14px 16px;cursor:pointer;border-radius:2px;display:grid;gap:4px}
+.scen button[aria-pressed="true"]{border-color:var(--seal);box-shadow:inset 4px 0 0 var(--seal)}
+.scen b{font-family:var(--font-d);font-size:18px}
+.picker{display:grid;gap:10px}
+.picker .row input[type=search]{flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:2px;font:inherit}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:transparent;padding:4px 10px;cursor:pointer;border-radius:2px;font-size:13px}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.tbl-wrap{overflow:auto;max-height:52vh;border:1px solid var(--line);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:5px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{position:sticky;top:0;background:var(--panel);font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--land)}
+tr.on{background:var(--land2)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.tag{display:inline-block;font-size:11px;padding:0 6px;border:1px solid currentColor;border-radius:2px;line-height:18px;letter-spacing:.06em}
+.tag.lord{color:var(--seal)} .tag.gov{color:var(--gold)} .tag.free{color:var(--muted)}
+
+/* 遊戲畫面 */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;padding-block:8px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.date{font-family:var(--font-d);font-weight:900;font-size:18px;letter-spacing:.06em}
+.who{display:flex;align-items:center;gap:8px}
+.mini-seal{font-family:var(--font-d);font-weight:700;background:var(--seal);color:var(--seal-ink);padding:2px 7px;border-radius:2px;letter-spacing:.1em}
+.ap{display:flex;align-items:center;gap:6px}
+.ap i{display:block;width:90px;height:8px;background:var(--line);border-radius:1px;overflow:hidden}
+.ap i b{display:block;height:100%;background:var(--seal)}
+.bar .spacer{flex:1}
+.game{display:grid;grid-template-columns:minmax(0,1fr) 400px;align-items:start}
+.mapwrap{padding:12px;min-width:0}
+#map{width:100%;height:auto;display:block;border:1px solid var(--line);background:var(--land)}
+.side{border-left:1px solid var(--line);background:var(--panel);padding-block:14px 30px;display:grid;gap:18px;min-width:0}
+.sec{display:grid;gap:8px}
+.sec h3{display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;text-align:center}
+.stats div{border:1px solid var(--line);padding:2px 0}
+.stats small{display:block;color:var(--muted);font-size:11px}
+.stats b{font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;font-variant-numeric:tabular-nums}
+.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line)}
+.kv span{color:var(--muted)}
+.olist{display:grid;gap:2px;max-height:260px;overflow:auto}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) repeat(5,28px);gap:4px;align-items:center;padding:3px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.orow:hover{background:var(--land)}
+.orow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orow.done .nm{color:var(--muted)}
+.orow span{text-align:right}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.logwrap{border-top:1px solid var(--line);padding-block:10px 40px}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:220px;overflow:auto;font-size:13px}
+.log li{display:grid;grid-template-columns:7.5em 1fr;gap:8px}
+.log li.me{color:var(--seal)}
+.log time{color:var(--muted);font-variant-numeric:tabular-nums}
+@media (max-width:920px){.game{grid-template-columns:1fr}.side{border-left:0;border-top:1px solid var(--line)}.mapwrap{padding:8px 0;overflow-x:auto}#map{min-width:720px}}
+
+/* 地圖 */
+.m-land{fill:var(--land)} .m-sea{fill:var(--sea)} .m-river{fill:none;stroke:var(--river);stroke-width:4;stroke-linecap:round}
+.m-rlabel{fill:var(--river);font:italic 700 15px var(--font-d);letter-spacing:.3em}
+.m-zhou{fill:var(--ink);opacity:.09;font:900 44px var(--font-d);letter-spacing:.1em;text-anchor:middle}
+.m-road{stroke:var(--road);stroke-width:1.6;stroke-dasharray:4 4}
+.m-label{fill:var(--ink);font:700 14px var(--font-d);text-anchor:middle;paint-order:stroke;stroke:var(--land);stroke-width:4px;stroke-linejoin:round}
+.m-troop{fill:var(--muted);font:500 11px var(--font-b);text-anchor:middle;paint-order:stroke;stroke:var(--land);stroke-width:3px}
+.m-neutral{fill:var(--land);stroke:var(--muted);stroke-width:2}
+.city{cursor:pointer}
+.city rect.cs{stroke:var(--ink);stroke-width:1.5}
+.m-sel{fill:none;stroke:var(--ink);stroke-width:2}
+.m-me{fill:none;stroke:var(--seal);stroke-width:3;stroke-dasharray:5 3}
+.m-flag{fill:var(--seal)}
+.m-flagt{fill:var(--seal-ink);font:700 11px var(--font-d);text-anchor:middle}
+
+/* 覆蓋卷 */
+.modal{position:fixed;inset:0;background:var(--shade);z-index:35;display:grid;place-items:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sheet{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--seal);max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:18px 20px;display:grid;gap:12px;border-radius:2px}
+.sheet.wide{max-width:920px}
+.sheet p{margin:0}
+.choices{display:grid;gap:6px}
+.choices button{display:flex;justify-content:space-between;gap:10px;text-align:left;border:1px solid var(--line);background:transparent;padding:8px 12px;cursor:pointer;border-radius:2px}
+.choices button:hover:not(:disabled){border-color:var(--ink);background:var(--land)}
+.choices button:disabled{opacity:.4;cursor:not-allowed}
+.choices small{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:2px;z-index:40;max-width:calc(100vw - 32px);font-size:14px}
+.busy{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--shade);color:var(--seal-ink);font:700 20px var(--font-d);letter-spacing:.2em}
+
+/* 戰場 */
+.bt{display:grid;gap:12px}
+.bt-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.bt-sides{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:640px){.bt-sides{grid-template-columns:1fr}}
+.bt-side{display:grid;gap:6px;align-content:start}
+.unit{border:1px solid var(--line);padding:6px 8px;display:grid;gap:3px;background:var(--paper);border-radius:2px;text-align:left}
+.unit.active{border-color:var(--seal);box-shadow:inset 3px 0 0 var(--seal)}
+.unit.target{cursor:pointer;border-color:var(--ink)}
+.unit.target:hover{background:var(--land2)}
+.unit.dead{opacity:.4}
+.unit .top{display:flex;justify-content:space-between;gap:6px}
+.hp{height:6px;background:var(--line);border-radius:1px;overflow:hidden}
+.hp b{display:block;height:100%}
+.bt-log{list-style:none;margin:0;padding:8px 10px;border:1px solid var(--line);max-height:170px;overflow:auto;font-size:13px;display:grid;gap:1px;background:var(--paper)}
+.duel{border:1px solid var(--seal);padding:10px 12px;display:grid;gap:8px;background:var(--paper)}
+.duel .hp{height:10px}
+@media (prefers-reduced-motion: no-preference){.unit{transition:background .15s}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+// ───────── 資料 ─────────
+// 城市：名稱, x, y, 規模(1–3), 州
+const CITY_RAW = `武威,130,150,1,涼州
+天水,220,250,1,雍州
+長安,330,270,3,司隸
+漢中,290,345,2,益州
+上庸,400,330,1,荊州
+梓潼,230,405,1,益州
+成都,180,475,3,益州
+江州,275,505,2,益州
+永安,360,440,1,益州
+建寧,230,600,1,益州
+雲南,130,640,1,益州
+晉陽,430,140,2,并州
+洛陽,445,255,3,司隸
+宛,450,335,2,荊州
+新野,470,385,1,荊州
+襄陽,470,430,3,荊州
+江陵,420,485,2,荊州
+武陵,385,545,1,荊州
+長沙,485,560,2,荊州
+零陵,400,625,1,荊州
+桂陽,500,645,1,荊州
+江夏,545,450,2,荊州
+陳留,550,250,2,兗州
+許昌,535,310,3,豫州
+汝南,560,370,2,豫州
+濮陽,605,215,2,兗州
+鄴,555,165,3,冀州
+薊,620,60,2,幽州
+北平,725,75,1,幽州
+南皮,680,135,2,冀州
+平原,680,195,1,青州
+北海,775,220,2,青州
+小沛,665,285,1,徐州
+下邳,745,310,2,徐州
+譙,615,330,1,豫州
+壽春,655,390,2,揚州
+廬江,640,455,1,揚州
+柴桑,590,515,1,揚州
+建業,755,420,3,揚州
+吳,825,465,2,揚州
+會稽,815,545,1,揚州`;
+const ROADS = `武威-天水 天水-長安 天水-漢中 長安-洛陽 長安-漢中 漢中-梓潼 漢中-上庸 梓潼-成都 成都-江州 成都-建寧 江州-永安 江州-建寧 建寧-雲南 永安-江陵 上庸-宛 上庸-襄陽 洛陽-宛 洛陽-陳留 洛陽-許昌 洛陽-晉陽 宛-新野 宛-許昌 新野-襄陽 襄陽-江陵 襄陽-江夏 江陵-武陵 江陵-長沙 武陵-零陵 長沙-零陵 長沙-桂陽 長沙-江夏 零陵-桂陽 長沙-柴桑 江夏-汝南 江夏-柴桑 江夏-廬江 陳留-許昌 陳留-濮陽 陳留-譙 許昌-汝南 許昌-譙 汝南-壽春 汝南-譙 濮陽-鄴 濮陽-平原 濮陽-小沛 鄴-南皮 鄴-晉陽 鄴-平原 薊-北平 薊-南皮 薊-晉陽 北平-南皮 南皮-平原 平原-北海 北海-下邳 小沛-下邳 小沛-譙 下邳-壽春 下邳-建業 譙-壽春 壽春-廬江 廬江-柴桑 廬江-建業 建業-吳 吳-會稽`;
+// 武將：姓名, 統率, 武力, 智力, 政治, 魅力, 生年, 卒年, 出身城市（能力為本作自訂）
+const OFF_RAW = `曹操,96,72,91,94,96,155,220,譙
+夏侯惇,90,89,58,70,86,157,220,譙
+夏侯淵,89,90,55,60,76,160,219,譙
+曹仁,89,86,62,56,77,168,223,譙
+曹洪,76,80,41,46,64,169,232,譙
+曹純,78,74,58,55,64,170,210,譙
+曹丕,72,72,80,85,82,187,226,譙
+曹彰,81,90,37,32,58,189,223,譙
+曹植,22,25,85,60,80,192,232,譙
+曹真,82,76,63,66,72,185,231,譙
+曹休,75,72,60,58,65,174,228,譙
+荀彧,52,21,95,98,90,163,212,許昌
+荀攸,64,34,95,80,72,157,214,許昌
+郭嘉,61,15,98,85,80,170,207,許昌
+程昱,72,40,90,78,52,141,220,濮陽
+賈詡,74,39,97,85,56,147,223,武威
+司馬懿,98,63,96,93,87,179,251,洛陽
+張遼,93,92,78,58,79,169,222,晉陽
+徐晃,88,90,72,48,70,165,227,長安
+張郃,90,89,69,57,72,167,231,鄴
+于禁,79,77,66,60,61,160,221,濮陽
+樂進,78,82,52,45,59,160,218,濮陽
+典韋,54,95,35,29,58,160,197,陳留
+許褚,63,96,36,25,62,170,230,譙
+李典,76,72,75,64,67,174,209,濮陽
+滿寵,80,64,82,81,70,170,242,濮陽
+龐德,79,94,63,39,67,170,219,天水
+鄧艾,94,85,89,83,68,197,264,宛
+郝昭,85,76,72,60,70,190,229,晉陽
+文聘,80,80,60,55,67,165,226,宛
+劉曄,37,30,92,82,60,168,234,壽春
+蔣濟,55,43,86,84,66,171,249,壽春
+陳群,40,30,79,94,75,170,237,許昌
+華歆,30,22,76,87,70,157,232,平原
+王朗,45,38,70,78,60,152,228,北海
+臧霸,78,80,57,45,66,165,230,下邳
+劉備,75,73,74,78,99,161,223,薊
+關羽,95,97,75,62,93,162,220,晉陽
+張飛,85,98,30,22,45,165,221,薊
+趙雲,91,96,76,65,81,168,229,鄴
+諸葛亮,92,38,100,95,92,181,234,襄陽
+龐統,68,34,97,85,69,179,214,襄陽
+馬超,88,97,44,26,82,176,222,武威
+黃忠,86,93,60,52,70,148,220,宛
+魏延,81,92,69,49,46,174,234,新野
+法正,80,47,94,78,49,176,220,長安
+徐庶,76,65,93,81,83,168,234,許昌
+姜維,90,89,90,70,79,202,264,天水
+馬岱,75,82,45,40,60,180,250,武威
+馬良,60,30,86,85,85,187,222,襄陽
+簡雍,33,43,73,64,82,160,214,薊
+糜竺,25,30,66,82,80,160,220,下邳
+孫乾,30,31,75,77,79,160,214,北海
+關平,74,82,59,51,70,178,220,晉陽
+王平,82,74,74,55,60,180,248,漢中
+蔣琬,50,30,86,90,82,188,246,零陵
+費禕,60,30,84,92,82,190,253,江夏
+嚴顏,76,80,67,54,68,150,220,江州
+黃權,78,52,85,75,76,170,240,江州
+李嚴,82,82,79,80,71,170,234,宛
+劉封,70,82,40,30,52,180,220,新野
+孫堅,92,93,72,73,89,155,191,吳
+孫策,92,94,69,66,92,175,200,吳
+孫權,75,67,80,89,95,182,252,吳
+周瑜,96,71,96,86,93,175,210,廬江
+魯肅,80,56,92,90,89,172,217,下邳
+呂蒙,91,81,89,78,82,178,219,汝南
+陸遜,95,69,95,87,85,183,245,吳
+黃蓋,82,83,71,60,74,150,215,零陵
+程普,85,79,74,62,79,150,210,北平
+韓當,78,83,55,50,66,155,227,北平
+甘寧,87,94,76,30,67,175,220,江州
+太史慈,83,93,66,50,79,166,206,北海
+周泰,81,91,51,39,63,165,225,壽春
+凌統,76,88,55,45,72,189,237,吳
+張昭,21,15,82,97,87,156,236,下邳
+諸葛瑾,66,35,83,88,88,174,241,北海
+徐盛,83,84,77,54,70,177,228,下邳
+丁奉,80,83,72,50,64,190,271,廬江
+朱然,83,78,74,58,68,182,249,建業
+蔣欽,76,81,55,45,60,168,219,壽春
+虞翻,40,50,82,70,50,164,233,會稽
+闞澤,30,30,82,76,70,170,243,會稽
+董卓,87,85,70,20,50,139,192,天水
+呂布,92,100,26,13,40,161,198,晉陽
+李儒,55,25,90,70,40,150,192,洛陽
+李傕,70,76,30,18,25,150,198,武威
+郭汜,68,74,35,14,26,150,197,武威
+華雄,75,88,40,20,40,150,191,武威
+張濟,66,70,50,40,50,150,196,武威
+高順,86,85,52,39,59,160,198,晉陽
+陳宮,78,46,91,70,70,155,198,濮陽
+張繡,74,80,60,45,60,160,207,武威
+袁紹,83,70,77,76,90,154,202,汝南
+袁術,63,55,63,54,65,155,199,汝南
+顏良,79,93,42,32,59,150,200,鄴
+文醜,78,94,25,30,53,150,200,鄴
+田豐,70,32,93,84,65,150,200,南皮
+沮授,82,34,91,82,76,150,200,南皮
+審配,76,55,80,70,62,150,204,鄴
+許攸,30,25,85,54,34,150,204,宛
+逢紀,30,22,80,72,50,150,202,南皮
+袁譚,70,65,45,50,60,172,205,汝南
+袁尚,66,70,50,50,70,175,207,汝南
+高覽,71,81,45,40,50,160,210,鄴
+紀靈,72,83,42,35,49,155,199,壽春
+張勳,65,70,40,36,40,155,199,壽春
+公孫瓚,82,84,46,51,75,150,199,北平
+劉虞,30,20,70,85,85,140,193,薊
+陶謙,40,30,60,72,70,132,194,下邳
+孔融,30,15,74,75,85,153,208,北海
+劉表,62,38,72,80,87,142,208,襄陽
+蔡瑁,74,64,67,59,48,160,208,襄陽
+蒯越,50,30,86,80,66,150,214,襄陽
+黃祖,66,62,40,34,40,150,208,江夏
+劉焉,50,30,70,75,70,130,194,成都
+劉璋,34,22,40,64,70,162,219,成都
+張任,85,84,75,55,70,170,214,成都
+張魯,70,38,73,79,85,160,216,漢中
+閻圃,50,30,82,75,60,160,230,漢中
+韓遂,80,75,72,52,65,140,215,武威
+馬騰,84,86,49,56,81,150,212,武威
+王允,30,20,76,85,70,137,192,晉陽
+孟獲,76,88,40,40,82,170,240,雲南
+祝融,70,87,30,25,60,175,240,雲南
+劉繇,60,50,60,65,68,156,197,平原
+嚴白虎,60,70,30,35,45,160,197,吳
+皇甫嵩,90,70,75,72,80,135,195,天水
+朱儁,82,68,70,70,72,140,195,會稽`;
+// 劇本：[君主, 城市（首個為本城）, 部下（@城市 表示駐地，否則在本城）]
+const SCENARIOS = [
+  {year:190, name:'群雄討董', desc:'董卓挾天子據洛陽，關東諸侯起兵討伐。中原尚有許多無主之城，在野者可伺機舉兵。', forces:[
+    ['董卓','洛陽 長安 天水','呂布 李儒 華雄 張遼 高順 王允 李傕@長安 郭汜@長安 張濟@長安 賈詡@長安 張繡@天水'],
+    ['曹操','陳留','夏侯惇 夏侯淵 曹仁 曹洪 曹純 樂進 李典'],
+    ['袁紹','南皮 鄴','顏良 文醜@鄴 田豐 沮授 審配@鄴 逢紀 許攸 高覽@鄴 張郃@鄴 袁譚'],
+    ['袁術','宛','紀靈 張勳'],
+    ['孫堅','長沙','程普 黃蓋 韓當 孫策'],
+    ['公孫瓚','北平','趙雲'],
+    ['劉備','平原','關羽 張飛 簡雍'],
+    ['劉虞','薊',''],
+    ['孔融','北海',''],
+    ['陶謙','下邳 小沛','糜竺 臧霸@小沛'],
+    ['劉表','襄陽 江陵 江夏','蔡瑁 蒯越 黃祖@江夏 文聘@江陵 黃忠@江陵'],
+    ['劉焉','成都 江州','劉璋 張任 嚴顏@江州'],
+    ['張魯','漢中','閻圃'],
+    ['馬騰','武威','韓遂'],
+    ['王朗','會稽','虞翻'],
+    ['嚴白虎','吳',''],
+    ['孟獲','雲南','祝融'],
+  ]},
+  {year:200, name:'官渡之戰', desc:'曹操奉天子以令不臣，袁紹統一河北，兩強決戰在即。江東孫策、荊州劉表、汝南劉備各懷其志。', forces:[
+    ['曹操','許昌 陳留 洛陽 濮陽 譙 小沛 下邳 壽春 宛 長安','夏侯惇@濮陽 夏侯淵@長安 曹仁 曹洪@陳留 曹純 荀彧 荀攸 郭嘉 程昱@濮陽 賈詡@宛 張遼@下邳 徐晃@洛陽 于禁 樂進@小沛 許褚 李典@陳留 滿寵@譙 劉曄@壽春 蔣濟@壽春 張繡@宛 臧霸@下邳 關羽 陳群 華歆 王朗@陳留 曹休@洛陽'],
+    ['袁紹','鄴 南皮 平原 北海 晉陽 薊 北平','顏良 文醜 沮授 審配 許攸 袁尚 田豐@南皮 逢紀@平原 袁譚@北海 高覽@晉陽 張郃@薊'],
+    ['劉備','汝南','張飛 趙雲 簡雍 糜竺 孫乾'],
+    ['孫策','吳 建業 會稽 廬江 柴桑','孫權 魯肅 張昭 黃蓋 周泰 呂蒙 諸葛瑾 朱然 周瑜@廬江 蔣欽@廬江 程普@柴桑 太史慈@柴桑 韓當@建業 徐盛@建業 虞翻@會稽'],
+    ['劉表','襄陽 新野 江陵 江夏 長沙 武陵 零陵','蔡瑁 蒯越 黃祖@江夏 甘寧@江夏 文聘@江陵 黃忠@長沙 魏延@長沙'],
+    ['劉璋','成都 江州 梓潼 永安','張任 法正 嚴顏@江州 黃權@梓潼'],
+    ['張魯','漢中','閻圃'],
+    ['馬騰','武威 天水','馬超 馬岱 龐德 韓遂@天水'],
+    ['孟獲','雲南 建寧','祝融@建寧'],
+  ]},
+];
+const FORCE_COLOR = {曹操:'#2f5fa8',劉備:'#2e8b57',孫堅:'#c0392b',孫策:'#c0392b',袁紹:'#c49a1a',董卓:'#6b3fa0',袁術:'#d4823a',劉表:'#1f8f8a',劉焉:'#8a5a2b',劉璋:'#8a5a2b',公孫瓚:'#b84a8a',馬騰:'#5c7c2a',張魯:'#a0522d',陶謙:'#4a90c2',孔融:'#8e44ad',劉虞:'#3b6e8f',王朗:'#c76b5a',嚴白虎:'#7a6a3a',孟獲:'#d35400'};
+const SPARE_COLORS = ['#e84393','#00897b','#5e35b1','#f39c12','#546e7a','#7cb342','#d81b60','#3949ab'];
+const LOYAL = {關羽:'劉備',張飛:'劉備'}; // 只願追隨特定君主
+const STAT = {lead:'統率',war:'武力',int:'智力',pol:'政治',cha:'魅力'};
+const STATK = Object.keys(STAT);
+const RANKS = [[0,'無官'],[200,'從事'],[600,'校尉'],[1200,'偏將軍'],[2200,'將軍'],[3800,'鎮軍將軍'],[6000,'大將軍']];
+const AP_MAX = 100, MAX_ROUND = 20, RISE_FAME = 200;
+const SAVE_KEY = 'luanshi.save', AUTO_KEY = 'luanshi.auto';
+// 地圖底圖
+const SEA = 'M780,0 L1000,0 L1000,720 L870,720 C860,640 880,580 860,540 C850,500 900,470 880,440 C860,400 820,370 820,320 C820,280 845,250 832,220 C815,190 782,172 762,142 C742,110 792,92 780,0Z';
+const RIVERS = [
+  ['黃河','M110,230 C180,170 250,92 330,82 C392,74 402,150 396,238 C420,252 470,226 540,214 C600,204 662,170 765,176',300,70],
+  ['長江','M80,565 C160,525 220,505 272,508 C322,512 350,445 382,470 C420,500 452,470 500,482 C540,486 562,470 592,492 C632,472 682,442 760,432 C805,426 850,414 880,420',640,428],
+  ['漢水','M300,352 C362,352 420,372 470,420 C500,442 520,450 540,456',372,372],
+];
+const GARRISON = {id:-1,name:'守備兵',lead:45,war:45,int:20,pol:0,cha:0};
+
+// ───────── 工具 ─────────
+const $ = (s, r=document) => r.querySelector(s);
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const chance = p => Math.random() < p;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmtN = n => n >= 10000 ? (n / 10000).toFixed(1).replace(/\.0$/, '') + '萬' : String(n);
+const SURNAMES2 = ['諸葛','司馬','夏侯','太史','公孫','皇甫'];
+const surname = n => SURNAMES2.find(s => n.startsWith(s)) || n[0];
+
+let G = null;           // 遊戲狀態（可存檔）
+const UI = {sel:null, busy:false, pick:null, sc:0, life:'hist', tab:'all', q:'', sort:null};
+const ADJ = [];
+CITY_RAW.split('\n').forEach((_, i) => ADJ[i] = []);
+const cityIdx = n => CITY_RAW.split('\n').findIndex(l => l.split(',')[0] === n);
+ROADS.split(' ').forEach(r => { const [a, b] = r.split('-').map(cityIdx); ADJ[a].push(b); ADJ[b].push(a); });
+
+const C = i => G.cities[i];
+const O = i => G.officers[i];
+const F = i => G.forces[i];
+const P = () => G.officers[G.player];
+const fname = f => f == null ? '無主' : O(F(f).ruler).name;
+const fcolor = f => f == null ? null : F(f).color;
+const age = o => G.year - o.birth;
+const byName = n => G.officers.find(o => o.name === n);
+const cityByName = n => G.cities.find(c => c.name === n);
+const forceCities = f => G.cities.filter(c => c.owner === f);
+const servants = (f, ci) => G.officers.filter(o => o.status === 'serve' && o.force === f && (ci == null || o.city === ci));
+const presentIn = ci => G.officers.filter(o => o.city === ci && ['serve','free','captive'].includes(o.status));
+const isRuler = o => o.status === 'serve' && F(o.force).ruler === o.id;
+const total = o => o.lead + o.war + o.int + o.pol + o.cha;
+
+function roleOf(o) {
+  if (o.status === 'free') return '在野';
+  if (o.status === 'captive') return '俘虜';
+  if (o.status !== 'serve') return o.status === 'dead' ? '已故' : '未登場';
+  if (F(o.force).ruler === o.id) return '主公';
+  if (C(o.city).gov === o.id) return '太守';
+  return '武將';
+}
+function rankName(o) {
+  if (isRuler(o)) { const n = forceCities(o.force).length; return n >= 25 ? '皇帝' : n >= 12 ? '王' : n >= 4 ? '州牧' : '刺史'; }
+  let t = RANKS[0][1]; for (const [m, n] of RANKS) if (o.merit >= m) t = n; return t;
+}
+function rankIdx(o) { let i = 0; RANKS.forEach(([m], k) => { if (o.merit >= m) i = k; }); return i; }
+function log(t, me) { G.log.unshift({d:`${G.year}年${G.month}月`, t, me:!!me}); if (G.log.length > 300) G.log.length = 300; }
+function toast(t) { const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
+
+// ───────── 開局 ─────────
+function makeCity(i, line) {
+  const [name, x, y, sz, zhou] = line.split(','); const s = +sz;
+  return {id:i, name, x:+x, y:+y, size:s, zhou, owner:null, gov:null, delegate:true,
+    gold:rnd(300,700)*s, food:rnd(3000,5000)*s, troops:0, train:rnd(30,55),
+    farm:rnd(150,280)*s, farmMax:400*s+200, comm:rnd(150,280)*s, commMax:400*s+200,
+    order:rnd(55,80), def:rnd(100,220)*s, defMax:300*s+300, pop:rnd(60,110)*1000*s, popMax:300000*s};
+}
+function newGame(si, life) {
+  const S = SCENARIOS[si];
+  G = {v:1, sc:si, year:S.year, month:1, life, cities:CITY_RAW.split('\n').map((l, i) => makeCity(i, l)),
+    forces:[], officers:[], player:-1, ap:AP_MAX, pgold:100, rel:{}, log:[], over:false, colorN:0};
+  G.officers = OFF_RAW.split('\n').map((l, i) => {
+    const [name, lead, war, int, pol, cha, birth, death, home] = l.split(',');
+    const o = {id:i, name, lead:+lead, war:+war, int:+int, pol:+pol, cha:+cha, birth:+birth,
+      dy:+death + (life === 'long' ? 15 : 0), dm:rnd(1,12), home:cityIdx(home), status:'hidden', force:-1,
+      city:cityIdx(home), loyalty:0, merit:0, fame:0, exp:{lead:0,war:0,int:0,pol:0,cha:0}, done:false};
+    o.fame = Math.max(0, Math.round((total(o) - 220) * 1.5));
+    if (o.dy < G.year) o.status = 'dead';
+    else if (age(o) >= 16) o.status = 'free';
+    return o;
+  });
+  S.forces.forEach(([rn, cs, os], fi) => {
+    const ruler = byName(rn);
+    G.forces.push({id:fi, ruler:ruler.id, color:FORCE_COLOR[rn] || SPARE_COLORS[fi % SPARE_COLORS.length], alive:true});
+    const cities = cs.split(' ').map(cityByName);
+    cities.forEach(c => { c.owner = fi; c.troops = rnd(3000,6000) + c.size * 2000; c.gold += 500; c.food += 4000; });
+    enlist(ruler, fi, cities[0].id); ruler.fame += 150; ruler.merit = 3000;
+    (os ? os.split(' ') : []).forEach(tok => { const [n, cn] = tok.split('@'); const o = byName(n); enlist(o, fi, cn ? cityByName(cn).id : cities[0].id); o.merit = Math.round(total(o) * 1.5); });
+    cities.forEach(fixGov);
+  });
+}
+function enlist(o, f, ci) { o.status = 'serve'; o.force = f; o.city = ci; o.loyalty = rnd(80,100); }
+function startAs(id) {
+  G.player = id; const p = P(); G.ap = AP_MAX; UI.sel = p.city;
+  log(`${p.name}（${roleOf(p)}）的故事從${C(p.city).name}開始。`, true);
+  saveTo(AUTO_KEY); render();
+}
+
+// ───────── 內政 ─────────
+const TASKS = {
+  farm:{n:'開墾', s:'pol', cost:50, can:c => c.farm < c.farmMax || '農業已達上限',
+    f(c,o){ const v = Math.round(o.pol/7 + rnd(3,8)); c.farm = Math.min(c.farmMax, c.farm + v); return `農業 +${v}（${c.farm}/${c.farmMax}）`; }},
+  comm:{n:'商業', s:'pol', cost:50, can:c => c.comm < c.commMax || '商業已達上限',
+    f(c,o){ const v = Math.round(o.pol/7 + rnd(3,8)); c.comm = Math.min(c.commMax, c.comm + v); return `商業 +${v}（${c.comm}/${c.commMax}）`; }},
+  order:{n:'治安', s:'war', cost:30, can:c => c.order < 100 || '治安已達上限',
+    f(c,o){ const v = Math.round(o.war/12 + rnd(1,4)); c.order = Math.min(100, c.order + v); return `治安 +${v}（${c.order}）`; }},
+  wall:{n:'城防', s:'lead', cost:50, can:c => c.def < c.defMax || '城防已達上限',
+    f(c,o){ const v = Math.round((o.lead + o.war)/10 + rnd(3,8)); c.def = Math.min(c.defMax, c.def + v); return `城防 +${v}（${c.def}/${c.defMax}）`; }},
+  draft:{n:'徵兵', s:'cha', cost:100, can:c => c.pop > 12000 || '人口不足',
+    f(c,o){ const v = Math.min(c.pop - 10000, 400 + o.cha*10 + rnd(0,200)); c.troops += v; c.pop -= v; c.order = Math.max(0, c.order - 3); c.train = Math.max(0, Math.round(c.train * 0.93)); return `士兵 +${v}（${c.troops}）`; }},
+  drill:{n:'訓練', s:'lead', cost:0, can:c => (c.troops > 0 && c.train < 100) || '沒有可訓練的士兵',
+    f(c,o){ const v = Math.round(o.lead/12 + rnd(1,4)); c.train = Math.min(100, c.train + v); return `訓練 +${v}（${c.train}）`; }},
+};
+function gainExp(o, s, v) {
+  o.exp[s] += v;
+  while (o.exp[s] >= 100) { o.exp[s] -= 100; if (o[s] < 100) { o[s]++; if (o.id === G.player) log(`${STAT[s]}提升至 ${o[s]}。`, true); } }
+}
+function runTask(key, c, o) {
+  const T = TASKS[key]; const ok = T.can(c);
+  if (ok !== true) return {err:ok};
+  if (c.gold < T.cost) return {err:`金不足（需 ${T.cost}）`};
+  c.gold -= T.cost; const msg = T.f(c, o);
+  o.merit += 10 + Math.round(o[T.s] / 10); o.fame += 1; gainExp(o, T.s, 8); o.done = true;
+  return {msg};
+}
+
+// ───────── 登用 ─────────
+function recruitChance(rec, t, captive) {
+  const f = rec.force; const ruler = O(F(f).ruler);
+  if (G.forces.some(x => x.alive && x.ruler === t.id)) return 0;
+  if (G.forces.some(x => x.ruler === t.id) && captive) return 0.05;
+  const lord = LOYAL[t.name]; if (lord) { const l = byName(lord); if (l.status !== 'dead' && ruler.id !== l.id) return 0.03; }
+  let p = 0.25 + (rec.cha - 50) / 150 + ruler.fame / 3000;
+  if (rec.id === G.player) p += (G.rel[t.id] || 0) / 200;
+  if (captive) p -= 0.15;
+  return clamp(p, 0.05, 0.9);
+}
+function freeOfficer(o, ci) {
+  if (o.status === 'serve' && C(o.city).gov === o.id) C(o.city).gov = null;
+  o.status = 'free'; o.force = -1; o.loyalty = 0; o.city = ci;
+}
+
+// ───────── 太守 ─────────
+function govScore(o) { return o.lead + o.pol + o.cha + o.merit / 40; }
+function fixGov(c, reeval) {
+  if (c.owner == null) { c.gov = null; return; }
+  const here = servants(c.owner, c.id);
+  if (!here.length) { c.gov = null; return; }
+  const ruler = here.find(isRuler);
+  const cur = c.gov != null ? O(c.gov) : null;
+  const curOk = cur && cur.status === 'serve' && cur.force === c.owner && cur.city === c.id;
+  if (ruler) { c.gov = ruler.id; return; }
+  if (curOk && !reeval) return;
+  // 玩家為主公時，不替玩家調換已任命的太守
+  if (curOk && reeval && isPlayerLord(c.owner)) return;
+  const best = here.slice().sort((a, b) => govScore(b) - govScore(a))[0];
+  if (!curOk || govScore(best) - govScore(cur) > 40) {
+    c.gov = best.id;
+    if (best.id === G.player && G.player >= 0) log(`你被任命為${c.name}太守。`, true);
+  }
+}
+const isPlayerLord = f => G.player >= 0 && P().status === 'serve' && P().force === f && isRuler(P());
+
+// ───────── 戰鬥 ─────────
+function unit(o, troops, train) { const t = Math.max(0, Math.floor(troops)); return {o, troops:t, max:Math.max(1, t), tf:0.7 + train/300, conf:0, gone:false}; }
+const live = side => side.units.filter(u => u.troops > 0 && !u.gone);
+const sumLive = side => live(side).reduce((s, u) => s + u.troops, 0);
+const pow = u => u.o.lead * 0.65 + u.o.war * 0.35;
+function splitTroops(offs, n) { const w = offs.reduce((s, o) => s + o.lead, 0) || 1; return offs.map(o => Math.floor(n * o.lead / w)); }
+function buildDefense(ci, extra) {
+  const c = C(ci);
+  let offs = c.owner == null ? [] : servants(c.owner, ci).sort((a, b) => (b.lead + b.war) - (a.lead + a.war)).slice(0, 5);
+  if (extra && !offs.includes(extra) && extra.status === 'serve' && extra.force === c.owner && extra.city === ci) { offs = offs.slice(0, 4); offs.push(extra); }
+  const units = !offs.length ? (c.troops > 0 ? [unit(GARRISON, c.troops, c.train)] : [])
+    : splitTroops(offs, c.troops).map((t, i) => unit(offs[i], t, c.train));
+  c.troops = 0;
+  return {force:c.owner, units};
+}
+function makeBattle(fromCi, toCi, offs, troops) {
+  const fc = C(fromCi), tc = C(toCi);
+  const sent = Math.min(troops, fc.troops); fc.troops -= sent;
+  offs.forEach(o => o.done = true);
+  const att = {force:fc.owner, from:fromCi, units:splitTroops(offs, sent).map((t, i) => unit(offs[i], t, fc.train))};
+  const def = buildDefense(toCi, P());
+  return {att, def, city:toCi, round:1, logs:[], wallF:1 / (1 + tc.def / 900), ui:false, ctrl:new Set(), caps:[]};
+}
+const sideOf = (B, u) => B.att.units.includes(u) ? B.att : B.def;
+const foeOf = (B, u) => B.att.units.includes(u) ? B.def : B.att;
+function blog(B, t) { B.logs.unshift(t); }
+
+function aiPick(B, u) {
+  const foes = live(foeOf(B, u)); if (!foes.length) return null;
+  const weakest = foes.reduce((a, b) => a.troops < b.troops ? a : b);
+  if (u.o.int >= 75 && chance(0.4)) {
+    const t = foes.reduce((a, b) => a.o.int < b.o.int ? a : b);
+    if (u.o.int - t.o.int >= 10) return {type:chance(0.75) ? 'fire' : 'conf', t};
+  }
+  if (u.o.id >= 0 && u.o.war >= 85 && chance(0.12)) {
+    const t = foes.find(f => f.o.id >= 0 && f.o.war < u.o.war - 3);
+    if (t) return {type:'duel', t};
+  }
+  return {type:'atk', t:weakest};
+}
+function routed(B, u) { if (u.troops <= 0) { u.troops = 0; blog(B, `${u.o.name} 部隊潰散。`); } }
+async function doAct(B, u, a) {
+  if (!a) return;
+  const t = a.t; const isAtt = B.att.units.includes(u);
+  if (a.type === 'atk') {
+    let d = (100 + u.troops*0.07) * Math.pow(pow(u)/pow(t), 1.3) * (0.85 + Math.random()*0.3) * u.tf;
+    if (isAtt) d *= B.wallF; if (t.conf) d *= 1.3;
+    let c = (60 + t.troops*0.035) * Math.pow(pow(t)/pow(u), 1.3) * (0.85 + Math.random()*0.3) * t.tf;
+    if (t.conf) c *= 0.5;
+    d = Math.min(t.troops, Math.round(d)); c = Math.min(u.troops, Math.round(c));
+    t.troops -= d; u.troops -= c;
+    blog(B, `${u.o.name} 攻擊 ${t.o.name}：敵損 ${d}，我損 ${c}`);
+    routed(B, t); routed(B, u);
+  } else if (a.type === 'fire' || a.type === 'conf') {
+    const p = clamp(0.35 + (u.o.int - t.o.int)/100 - (a.type === 'conf' ? 0.05 : 0), 0.05, 0.9);
+    if (!chance(p)) { blog(B, `${u.o.name} 的${a.type === 'fire' ? '火計' : '混亂之計'}被 ${t.o.name} 識破。`); return; }
+    if (a.type === 'fire') {
+      const d = Math.min(t.troops, Math.round((250 + u.o.int*9) * (0.7 + Math.random()*0.6)));
+      t.troops -= d; blog(B, `${u.o.name} 火計成功！${t.o.name} 損兵 ${d}`); routed(B, t);
+    } else { t.conf = 2; blog(B, `${u.o.name} 計策成功，${t.o.name} 陷入混亂。`); }
+    gainExp(u.o, 'int', 3);
+  } else if (a.type === 'duel') {
+    await duel(B, u, t);
+  }
+}
+async function duel(B, a, d) {
+  // 接受與否
+  const playerTarget = B.ui && d.o.id === G.player;
+  let accept;
+  if (playerTarget) accept = await askYesNo(B, `${a.o.name}（武力 ${a.o.war}）向你挑戰單挑！`, '應戰', '拒絕');
+  else if (a.o.id === G.player) accept = d.o.war >= a.o.war ? chance(0.85) : chance(clamp(0.2 + (d.o.war - a.o.war + 15)/40, 0.05, 0.8));
+  else accept = d.o.war >= a.o.war ? chance(0.85) : chance(clamp(0.2 + (d.o.war - a.o.war + 15)/40, 0.05, 0.8));
+  if (!accept) { blog(B, `${d.o.name} 拒絕了 ${a.o.name} 的單挑。`); return; }
+  blog(B, `${a.o.name} 與 ${d.o.name} 展開單挑！`);
+  const ui = B.ui && (a.o.id === G.player || d.o.id === G.player);
+  const st = {ha:100, hd:100, r:0, text:''};
+  const aiMove = () => { const x = Math.random(); return x < 0.45 ? 'atk' : x < 0.7 ? 'def' : 'crit'; };
+  const M = {atk:{atk:[1,1],def:[0.3,0.5],crit:[1,2.2]}, def:{atk:[0.5,0.3],def:[0,0],crit:[1.5,0.2]}, crit:{atk:[2.2,1],def:[0.2,1.5],crit:[1.8,1.8]}};
+  const MN = {atk:'攻擊', def:'防守', crit:'全力一擊'};
+  const base = (x, y) => (6 + x.war*0.12) * Math.pow(x.war / y.war, 1.5) * (0.7 + Math.random()*0.6);
+  while (st.ha > 0 && st.hd > 0 && st.r < 10) {
+    st.r++;
+    let ma = aiMove(), md = aiMove();
+    if (ui) { const m = await duelAsk(B, a, d, st); if (a.o.id === G.player) ma = m; else md = m; }
+    const [ka, kd] = M[ma][md];
+    const da = Math.round(base(a.o, d.o) * ka), dd = Math.round(base(d.o, a.o) * kd);
+    st.hd -= da; st.ha -= dd;
+    st.text = `第 ${st.r} 回合：${a.o.name}「${MN[ma]}」對 ${d.o.name}「${MN[md]}」，${d.o.name} 受創 ${da}，${a.o.name} 受創 ${dd}`;
+  }
+  let win = null;
+  if (st.ha <= 0 || st.hd <= 0) win = st.ha > st.hd ? a : d;
+  if (ui) await duelAsk(B, a, d, st, win || 'draw');
+  if (!win) { blog(B, `單挑十回合不分勝負，兩人各自退回。`); return; }
+  const lose = win === a ? d : a;
+  blog(B, `${win.o.name} 單挑擊敗 ${lose.o.name}！`);
+  win.o.fame += 20; win.o.merit += 50; gainExp(win.o, 'war', 10);
+  lose.troops = Math.floor(lose.troops * 0.5); lose.conf = 2;
+  if (!(lose.o.status === 'serve' && isRuler(lose.o)) && chance(0.35)) { lose.gone = true; blog(B, `${lose.o.name} 被生擒！`); }
+}
+
+// 戰鬥進行（ui 時顯示戰場）
+async function runBattle(B) {
+  if (B.ui) openBattle(B);
+  let win = null;
+  if (!live(B.def).length) win = 'att';
+  for (; !win && B.round <= MAX_ROUND; B.round++) {
+    for (const side of [B.att, B.def]) {
+      for (const u of side.units) {
+        if (win) break;
+        if (u.troops <= 0 || u.gone) continue;
+        if (!live(foeOf(B, u)).length) break;
+        if (u.conf > 0) { u.conf--; blog(B, `${u.o.name} 混亂中，無法行動。`); continue; }
+        let a;
+        if (B.ui && B.ctrl.has(u) && !B.auto) {
+          a = await askAction(B, u);
+          if (a.type === 'retreat') { blog(B, `${side === B.att ? '攻方' : '守方'}撤退。`); win = side === B.att ? 'def' : 'att'; B.retreat = true; break; }
+          if (a.type === 'auto') { B.auto = true; a = aiPick(B, u); }
+        } else a = aiPick(B, u);
+        await doAct(B, u, a);
+        if (!live(B.att).length) win = 'def'; else if (!live(B.def).length) win = 'att';
+        if (B.ui) { renderBattle(B); if (!B.auto) await sleep(260); }
+      }
+      if (win) break;
+    }
+  }
+  if (!win) { win = 'def'; blog(B, '攻方糧盡，撤兵而回。'); }
+  B.win = win;
+  if (B.ui) await battleEnd(B);
+  return win;
+}
+
+function fleeCity(f, from) {
+  if (f == null) return null;
+  const near = ADJ[from].find(i => C(i).owner === f);
+  if (near != null) return near;
+  const any = forceCities(f)[0];
+  return any ? any.id : null;
+}
+function applyBattle(B) {
+  const win = B.win, tc = C(B.city);
+  const attF = B.att.force, defF = B.def.force;
+  const attLeft = sumLive(B.att);
+  const defLeft = sumLive(B.def);
+  const caps = [];
+  const capture = (o, f, ci) => {
+    if (o.status === 'serve' && C(o.city).gov === o.id) C(o.city).gov = null;
+    o.prevForce = o.force; o.status = 'captive'; o.force = f; o.city = ci; o.loyalty = 0; caps.push(o);
+  };
+  const attOffs = B.att.units.filter(u => u.o.id >= 0);
+  const defOffs = B.def.units.filter(u => u.o.id >= 0);
+  if (win === 'att') {
+    const defenders = defF == null ? [] : servants(defF, B.city);
+    tc.owner = attF; tc.gov = null; tc.troops = attLeft; tc.delegate = true;
+    tc.gold = Math.floor(tc.gold * 0.6); tc.food = Math.floor(tc.food * 0.7);
+    tc.order = Math.max(20, tc.order - 15); tc.def = Math.round(tc.def * 0.85);
+    attOffs.forEach(u => { u.o.city = B.city; u.o.merit += 30; u.o.fame += 8; });
+    defenders.forEach(o => {
+      const u = defOffs.find(x => x.o === o);
+      const flee = fleeCity(defF, B.city);
+      if (isRuler(o)) { if (flee != null) o.city = flee; else if (chance(0.6)) capture(o, attF, B.city); else freeOfficer(o, B.city); return; }
+      const p = u ? (u.gone ? 1 : u.troops <= 0 ? 0.5 : 0.25) : 0.3;
+      if (chance(p)) capture(o, attF, B.city);
+      else if (flee != null) o.city = flee;
+      else freeOfficer(o, B.city);
+    });
+    if (defF != null && defLeft > 0) { const flee = fleeCity(defF, B.city); if (flee != null) C(flee).troops += Math.floor(defLeft * 0.5); }
+    const ruler = attOffs.find(u => isRuler(u.o));
+    tc.gov = (ruler || attOffs[0]) ? (ruler || attOffs[0]).o.id : null;
+    log(`${fname(attF)}軍攻陷${tc.name}${defF != null ? `（原屬${fname(defF)}）` : ''}。`, attOffs.some(u => u.o.id === G.player) || defenders.some(o => o.id === G.player));
+  } else {
+    tc.troops = defLeft;
+    const fc = C(B.att.from);
+    const back = fc.owner === attF ? fc.id : fleeCity(attF, fc.id);
+    attOffs.forEach(u => {
+      const o = u.o; const p = isRuler(o) ? 0 : (u.gone ? 1 : u.troops <= 0 ? 0.3 : 0);
+      if (chance(p) && defF != null) capture(o, defF, B.city);
+      else if (back != null) o.city = back;
+      else freeOfficer(o, o.city);
+    });
+    if (back != null) C(back).troops += attLeft;
+    defOffs.forEach(u => { u.o.merit += 25; u.o.fame += 5; });
+    log(`${fname(defF)}軍守住${tc.name}，擊退${fname(attF)}軍。`, attOffs.some(u => u.o.id === G.player) || defOffs.some(u => u.o.id === G.player));
+  }
+  if (tc.gov != null && O(tc.gov).city !== tc.id) tc.gov = null;
+  fixGov(tc); fixGov(C(B.att.from));
+  checkForces();
+  return {caps, captor: win === 'att' ? attF : defF};
+}
+async function fight(B) {
+  await runBattle(B);
+  const {caps, captor} = applyBattle(B);
+  await processCaptives(caps, captor);
+}
+async function processCaptives(list, f) {
+  const mine = [];
+  for (const o of list) {
+    if (o.status !== 'captive') continue;
+    if (o.id === G.player) { await playerCaptured(o, f); continue; }
+    if (isPlayerLord(f)) { mine.push(o); continue; }
+    const wasRuler = G.forces.some(x => x.ruler === o.id);
+    if (wasRuler) { if (chance(0.3)) killOfficer(o, `${o.name} 被${fname(f)}處斬。`); else freeOfficer(o, o.city); continue; }
+    const ruler = O(F(f).ruler);
+    if (chance(recruitChance(ruler, o, true))) { o.status = 'serve'; o.loyalty = rnd(55,80); log(`${o.name} 歸降${fname(f)}。`); }
+    else freeOfficer(o, o.city);
+  }
+  if (mine.length) await lordCaptives(mine);
+}
+function killOfficer(o, msg) {
+  if (o.status === 'serve' && C(o.city).gov === o.id) C(o.city).gov = null;
+  o.status = 'dead';
+  if (msg) log(msg, o.id === G.player);
+}
+function checkForces() {
+  G.forces.forEach(f => {
+    if (!f.alive) return;
+    if (!forceCities(f.id).length) { destroyForce(f); return; }
+    const r = O(f.ruler);
+    if (r.status !== 'serve' || r.force !== f.id) succession(f);
+  });
+}
+function destroyForce(f) {
+  const name = fname(f.id);
+  f.alive = false;
+  G.officers.forEach(o => { if ((o.status === 'serve' || o.status === 'captive') && o.force === f.id) freeOfficer(o, o.city); });
+  G.cities.forEach(c => { if (c.owner === f.id) { c.owner = null; c.gov = null; } });
+  log(`${name}勢力滅亡。`, G.player >= 0 && P().force === f.id);
+}
+function succession(f) {
+  const cand = servants(f.id);
+  const old = O(f.ruler);
+  if (!cand.length) { destroyForce(f); return; }
+  const kin = o => surname(o.name) === surname(old.name) && o.home === old.home; // 同姓同鄉視為宗族
+  cand.sort((a, b) => (kin(b) - kin(a)) || ((b.merit + b.cha*10 + b.lead*5) - (a.merit + a.cha*10 + a.lead*5)));
+  const h = cand[0]; f.ruler = h.id; h.loyalty = 100;
+  log(`${h.name} 繼承${old.name}，成為新君主。`, h.id === G.player || old.id === G.player);
+  forceCities(f.id).forEach(c => fixGov(c));
+}
+
+// ───────── 電腦勢力 ─────────
+async function aiForce(f) {
+  if (!f.alive) return;
+  const lordForce = isPlayerLord(f.id);
+  const cities = forceCities(f.id);
+  cities.forEach(c => fixGov(c, G.month === 1));
+  cities.forEach(c => { if (!lordForce || c.delegate) aiDomestic(c); });
+  if (lordForce) return;
+  aiRecruit(f); aiBalance(f);
+  await aiWar(f);
+}
+function aiDomestic(c) {
+  const offs = servants(c.owner, c.id).filter(o => !o.done && o.id !== G.player);
+  const need = {
+    order: c.order < 75 ? (75 - c.order) * 2.5 + 10 : 0,
+    farm: (1 - c.farm / c.farmMax) * 100,
+    comm: (1 - c.comm / c.commMax) * 110,
+    wall: (1 - c.def / c.defMax) * 50,
+    draft: c.troops < 4000 + c.size * 5000 && c.gold >= 250 && c.order >= 40 ? 90 : 0,
+    drill: c.troops > 1000 && c.train < 90 ? (95 - c.train) * 1.2 : 0,
+  };
+  offs.forEach(o => {
+    let best = null, bv = 0;
+    for (const k in need) { const v = need[k] * (o[TASKS[k].s] / 70); if (v > bv && TASKS[k].can(c) === true && c.gold >= TASKS[k].cost) { bv = v; best = k; } }
+    if (best && bv > 8) { runTask(best, c, o); need[best] *= 0.5; }
+  });
+}
+function aiRecruit(f) {
+  const ruler = O(F(f.id).ruler);
+  G.officers.forEach(o => {
+    if (o.status !== 'free' || o.id === G.player) return;
+    if (C(o.city).owner !== f.id) return;
+    if (chance(0.12 + ruler.cha/600) && chance(recruitChance(ruler, o, false) + 0.2)) {
+      enlist(o, f.id, o.city); o.loyalty = rnd(60,90);
+      if (total(o) >= 380) log(`${o.name} 仕官於${ruler.name}。`);
+    }
+  });
+}
+function aiBalance(f) {
+  forceCities(f.id).forEach(c => {
+    if (servants(f.id, c.id).length) return;
+    for (const n of ADJ[c.id]) {
+      if (C(n).owner !== f.id) continue;
+      const pool = servants(f.id, n).filter(o => o.id !== G.player && !isRuler(o) && C(n).gov !== o.id);
+      if (pool.length >= 2) { const o = pool[pool.length - 1]; o.city = c.id; fixGov(c); return; }
+    }
+  });
+}
+async function aiWar(f) {
+  const cities = shuffle(forceCities(f.id));
+  const limit = cities.length >= 8 ? 2 : 1; let n = 0;
+  for (const c of cities) {
+    if (n >= limit || !f.alive || c.owner !== f.id) break;
+    const avail = servants(f.id, c.id).filter(o => !o.done && o.id !== G.player);
+    if (!avail.length) continue;
+    for (const ti of shuffle(ADJ[c.id].slice())) {
+      const t = C(ti);
+      if (t.owner === f.id) continue;
+      if (t.owner == null && t.troops === 0) {
+        if (c.troops >= 3000 && avail.length >= 2 && chance(0.35)) {
+          const o = avail.sort((a, b) => govScore(b) - govScore(a))[1];
+          const send = Math.min(3000, Math.floor(c.troops * 0.35));
+          c.troops -= send; t.owner = f.id; t.troops = send; o.city = t.id; o.done = true; t.gov = o.id; t.delegate = true;
+          log(`${fname(f.id)}軍佔領無主的${t.name}。`);
+          n++; break;
+        }
+        continue;
+      }
+      const tOffs = t.owner == null ? [] : servants(t.owner, t.id);
+      const defPow = t.troops * (1 + t.def/1500) + tOffs.reduce((s, o) => s + o.lead*30, 0);
+      const team = avail.slice().sort((a, b) => (b.lead + b.war) - (a.lead + a.war)).slice(0, Math.min(4, Math.max(1, avail.length - 1)));
+      const atkPow = c.troops * 0.7 + team.reduce((s, o) => s + o.lead*30, 0);
+      if (c.troops >= 4000 && atkPow > defPow * 1.05 && chance(0.5)) {
+        await aiAttack(f, c, t, team); n++; break;
+      }
+    }
+  }
+}
+async function aiAttack(f, c, t, team) {
+  const p = G.player >= 0 ? P() : null;
+  let playerAtt = false;
+  if (p && p.status === 'serve' && p.force === f.id && p.city === c.id && !isRuler(p) && chance(0.6)) { team = team.slice(0, 4); team.push(p); playerAtt = true; }
+  const B = makeBattle(c.id, t.id, team, Math.floor(c.troops * 0.7));
+  const playerDef = p && p.status === 'serve' && t.owner != null && p.force === t.owner && p.city === t.id;
+  if (playerAtt || playerDef) {
+    B.ui = true;
+    if (playerAtt) { const u = B.att.units.find(x => x.o.id === G.player); if (u) B.ctrl.add(u); }
+    else {
+      const all = isRuler(p) || t.gov === p.id;
+      B.def.units.forEach(u => { if (all || u.o.id === G.player) B.ctrl.add(u); });
+    }
+    await notice(playerAtt ? `${fname(f.id)}命令出兵${t.name}，你隨軍出陣。` : `${fname(f.id)}軍進攻${t.name}！你在城中迎戰。`, '出陣');
+  }
+  await fight(B);
+}
+
+// ───────── 月結 ─────────
+async function endMonth() {
+  if (UI.busy || G.over) return;
+  UI.busy = true; showBusy(true);
+  try {
+    for (const f of shuffle(G.forces.slice())) { if (f.alive) await aiForce(f); }
+    economy();
+    G.month++; if (G.month > 12) { G.month = 1; G.year++; }
+    await people();
+    checkForces();
+    G.officers.forEach(o => o.done = false);
+    G.ap = AP_MAX;
+    const p = P();
+    if (p.status === 'serve') G.pgold += 10 + rankIdx(p) * 10;
+    await invitation();
+    await checkEnd();
+    if (G && !G.over) saveTo(AUTO_KEY);
+  } finally { UI.busy = false; showBusy(false); }
+  render();
+}
+function economy() {
+  G.cities.forEach(c => {
+    if (c.owner == null) { c.pop = Math.min(c.popMax, c.pop + Math.round(c.pop * 0.001)); return; }
+    const k = 0.5 + c.order / 200;
+    c.gold = Math.min(99999, c.gold + Math.round((c.comm * 0.4 + c.pop / 4000) * k));
+    if (G.month === 7) { const h = Math.round((c.farm * 14 + c.pop / 80) * k); c.food = Math.min(999999, c.food + h); }
+    c.food -= Math.round(c.troops * 0.03);
+    if (c.food < 0) { c.food = 0; const d = Math.round(c.troops * 0.1); c.troops -= d; if (d) log(`${c.name}糧盡，${d} 名士兵逃亡。`, c.owner === P().force); }
+    c.pop = Math.min(c.popMax, c.pop + Math.round(c.pop * 0.002 * (c.order / 60)));
+    if (chance(0.3)) c.order = Math.max(0, c.order - 1);
+  });
+}
+async function people() {
+  for (const o of G.officers) {
+    if (o.status === 'dead') continue;
+    if (G.year > o.dy || (G.year === o.dy && G.month >= o.dm)) {
+      if (o.status === 'hidden') { o.status = 'dead'; continue; }
+      const wasRuler = o.status === 'serve' && isRuler(o);
+      const f = o.force;
+      killOfficer(o, `${o.name} 病逝，享年 ${age(o)} 歲。`);
+      if (wasRuler) succession(F(f));
+      if (o.id === G.player) await playerDied(o, wasRuler ? f : null);
+      continue;
+    }
+    if (o.status === 'hidden' && G.month === 1 && age(o) >= 16) {
+      o.status = 'free'; o.city = o.home;
+      if (total(o) >= 360) log(`${o.name} 在${C(o.home).name}嶄露頭角。`);
+    }
+    if (o.status === 'free' && o.id !== G.player && chance(0.04)) o.city = ADJ[o.city][rnd(0, ADJ[o.city].length - 1)];
+  }
+}
+async function invitation() {
+  const p = P();
+  if (p.status !== 'free' || p.fame < 120) return;
+  const c = C(p.city); if (c.owner == null || !chance(0.08)) return;
+  const ok = await ask(`${fname(c.owner)}派使者前來，邀請你出仕。`, '接受', '婉拒');
+  if (ok) { enlist(p, c.owner, c.id); p.loyalty = 100; log(`你應邀仕官於${fname(c.owner)}。`, true); }
+  else log(`你婉拒了${fname(c.owner)}的邀請。`, true);
+}
+async function checkEnd() {
+  const owners = new Set(G.cities.map(c => c.owner));
+  if (owners.size === 1 && !owners.has(null)) {
+    const f = [...owners][0]; G.over = true;
+    const p = P();
+    const mine = p.status === 'serve' && p.force === f;
+    log(`${fname(f)}統一天下。`, true);
+    await notice(mine ? (isRuler(p) ? `天下統一！你以主公身分平定四海，${G.year}年${G.month}月開創新朝。` : `${fname(f)}統一天下，你以${rankName(p)}之身名留青史。`) : `${fname(f)}已統一天下。你的故事到此為止。`, '回到標題');
+    G = null; render();
+  }
+}
+async function playerDied(o, f) {
+  if (f != null && F(f).alive && F(f).ruler !== o.id) {
+    const h = O(F(f).ruler);
+    await notice(`${o.name} 病逝。你以繼承人 ${h.name} 的身分繼續統領勢力。`, '繼續');
+    G.player = h.id; UI.sel = h.city; return;
+  }
+  const again = await ask(`${o.name} 病逝，享年 ${age(o)} 歲。要以其他武將繼續這個天下嗎？`, '選擇其他武將', '回到標題');
+  if (again) { UI.repick = true; } else { G.over = true; }
+}
+async function playerCaptured(o, f) {
+  const wasLord = G.forces.some(x => x.ruler === o.id && x.id === o.prevForce);
+  const ok = await ask(`你被${fname(f)}軍俘虜。${fname(f)}勸你歸順。`, '歸順', '拒絕');
+  if (ok && !wasLord) { o.status = 'serve'; o.loyalty = 80; o.merit = Math.floor(o.merit / 2); log(`你歸順了${fname(f)}。`, true); return; }
+  if (ok && wasLord) log('你身為一方君主，無法歸順。', true);
+  freeOfficer(o, ADJ[o.city][rnd(0, ADJ[o.city].length - 1)]);
+  log(`你拒絕歸順，被釋放後流落${C(o.city).name}。`, true);
+  UI.sel = o.city;
+}
+
+// ───────── 玩家行動 ─────────
+function useAP(n) { if (G.ap < n) { toast('行動力不足，請結束本月。'); return false; } G.ap -= n; return true; }
+function personalActs() {
+  const p = P(), r = roleOf(p), c = C(p.city), A = [];
+  A.push({k:'move', n:'移動', cost:40});
+  A.push({k:'visit', n:'拜訪', cost:20});
+  A.push({k:'train', n:'鍛鍊', cost:30});
+  if (r === '在野') {
+    A.push({k:'serve', n:'仕官', cost:20, dis:c.owner == null ? '此城無主' : ''});
+    A.push({k:'rise', n:'舉兵', cost:0, dis:c.owner != null ? '只可在無主城市舉兵' : p.fame < RISE_FAME ? `名聲需達 ${RISE_FAME}` : ''});
+    A.push({k:'bandit', n:'討伐賊寇', cost:40});
+  } else if (r !== '俘虜') {
+    A.push({k:'task', n:'內政', cost:30, dis:c.owner !== p.force ? '不在己方城市' : ''});
+    if (r !== '主公') A.push({k:'leave', n:'下野', cost:0});
+    if (r === '太守') A.push({k:'rebel', n:'獨立', cost:0});
+  }
+  return A;
+}
+function canCommand(ci) {
+  const p = P(), c = C(ci);
+  if (p.status !== 'serve' || c.owner !== p.force) return false;
+  if (isRuler(p)) return true;
+  return c.gov === p.id && p.city === ci;
+}
+async function doPersonal(k) {
+  const p = P(), c = C(p.city);
+  if (k === 'move') {
+    const opts = ADJ[p.city].map(C).map(t => {
+      const ok = p.status === 'free' || t.owner === p.force;
+      return {label:t.name, sub:`${fname(t.owner)}`, value:t.id, disabled:!ok};
+    });
+    const to = await choose('移動到', opts, p.status === 'serve' ? '仕官中只可在己方城市之間移動。' : '');
+    if (to == null || !useAP(40)) return;
+    if (C(p.city).gov === p.id && !isRuler(p)) C(p.city).gov = null;
+    p.city = to; UI.sel = to;
+    if (p.status === 'serve') { fixGov(c); fixGov(C(to)); }
+    log(`你移動到${C(to).name}。`, true);
+  } else if (k === 'visit') {
+    const list = presentIn(p.city).filter(o => o.id !== p.id);
+    if (!list.length) return toast('此城沒有可拜訪的人。');
+    const id = await pickOfficer('拜訪誰？', list, 'cha', o => `親密 ${G.rel[o.id] || 0}`);
+    if (id == null || !useAP(20)) return;
+    const o = O(id); const v = 4 + Math.round(p.cha / 10) + rnd(0, 5);
+    G.rel[id] = Math.min(100, (G.rel[id] || 0) + v); gainExp(p, 'cha', 4);
+    log(`你拜訪了${o.name}，親密度 +${v}（${G.rel[id]}）。`, true);
+  } else if (k === 'train') {
+    const s = await choose('鍛鍊哪一項？', STATK.map(s => ({label:STAT[s], sub:`${p[s]}（經驗 ${p.exp[s]}/100）`, value:s, disabled:p[s] >= 100})));
+    if (s == null || !useAP(30)) return;
+    const v = 25 + rnd(0, 15); gainExp(p, s, v);
+    log(`你潛心鍛鍊${STAT[s]}，經驗 +${v}。`, true);
+  } else if (k === 'serve') {
+    const ruler = O(F(c.owner).ruler);
+    const pr = clamp(0.3 + p.fame/400 + (G.rel[ruler.id] || 0)/150 + (total(p) - 300)/500 - forceCities(c.owner).length * 0.01, 0.05, 0.95);
+    if (!(await ask(`向${ruler.name}求仕？（成功率約 ${Math.round(pr*100)}%）`, '求仕', '取消')) || !useAP(20)) return;
+    if (chance(pr)) { enlist(p, c.owner, p.city); p.loyalty = 100; p.merit = Math.max(p.merit, 0); p.fame += 10; log(`${ruler.name} 接納了你，你仕官於${ruler.name}。`, true); }
+    else log(`${ruler.name} 婉拒了你的求仕。`, true);
+  } else if (k === 'rise') {
+    const followers = presentIn(p.city).filter(o => o.status === 'free' && o.id !== p.id && (G.rel[o.id] || 0) >= 50);
+    if (!(await ask(`在${c.name}舉兵自立？${followers.length ? `願追隨你的人：${followers.map(o => o.name).join('、')}。` : '目前沒有人追隨你。'}`, '舉兵', '取消'))) return;
+    const fi = G.forces.length;
+    G.forces.push({id:fi, ruler:p.id, color:SPARE_COLORS[G.colorN++ % SPARE_COLORS.length], alive:true});
+    enlist(p, fi, p.city); p.loyalty = 100; p.merit = Math.max(p.merit, 1000);
+    c.owner = fi; c.gov = p.id; c.troops += 1000 + p.fame * 8; c.gold += 300 + G.pgold; c.food += 3000; c.delegate = false; G.pgold = 0;
+    followers.forEach(o => enlist(o, fi, p.city));
+    log(`你在${c.name}舉兵，成為一方之主！`, true);
+  } else if (k === 'bandit') {
+    if (!useAP(40)) return;
+    const pr = clamp(0.35 + (p.war + p.lead) / 260, 0.2, 0.92);
+    if (chance(pr)) { const g = rnd(50, 150), fm = rnd(10, 25); G.pgold += g; p.fame += fm; gainExp(p, 'war', 12); gainExp(p, 'lead', 6); log(`你討平${c.name}附近的賊寇，名聲 +${fm}，得金 ${g}。`, true); }
+    else { p.fame = Math.max(0, p.fame - 5); gainExp(p, 'war', 5); log('你討伐賊寇失利，狼狽而回。', true); }
+  } else if (k === 'task') {
+    const key = await choose('親自執行哪項內政？', Object.entries(TASKS).map(([k, T]) => { const ok = T.can(c); return {label:T.n, sub:ok === true ? `${STAT[T.s]} ${p[T.s]}・費用 ${T.cost}` : ok, value:k, disabled:ok !== true || c.gold < T.cost}; }));
+    if (key == null || !useAP(30)) return;
+    const r = runTask(key, c, p); p.done = false;
+    log(r.err ? r.err : `你親自${TASKS[key].n}：${r.msg}`, true);
+  } else if (k === 'leave') {
+    if (!(await ask(`離開${fname(p.force)}，成為在野之士？`, '下野', '取消'))) return;
+    const f = p.force; freeOfficer(p, p.city); fixGov(c); p.fame = Math.max(0, p.fame - 10);
+    log(`你辭去官職，離開${fname(f)}。`, true);
+  } else if (k === 'rebel') {
+    const old = p.force;
+    if (!(await ask(`在${c.name}脫離${fname(old)}，自立為君主？`, '獨立', '取消'))) return;
+    const fi = G.forces.length;
+    G.forces.push({id:fi, ruler:p.id, color:SPARE_COLORS[G.colorN++ % SPARE_COLORS.length], alive:true});
+    const here = servants(old, c.id).filter(o => o.id !== p.id);
+    p.force = fi; c.owner = fi; c.gov = p.id; c.delegate = false; p.merit = Math.max(p.merit, 1000);
+    const flee = fleeCity(old, c.id);
+    const joined = [];
+    here.forEach(o => { if (o.loyalty < 75 || (G.rel[o.id] || 0) >= 60) { o.force = fi; o.loyalty = 70 + rnd(0, 20); joined.push(o.name); } else if (flee != null) o.city = flee; else freeOfficer(o, c.id); });
+    log(`你在${c.name}脫離${fname(old)}獨立！${joined.length ? `${joined.join('、')}追隨你。` : ''}`, true);
+    checkForces();
+  }
+  render();
+}
+
+async function doCommand(k, ci) {
+  const p = P(), c = C(ci);
+  const avail = () => servants(c.owner, ci).filter(o => o.id !== G.player && !o.done);
+  if (k === 'task') {
+    const key = await choose(`${c.name}：指派內政`, Object.entries(TASKS).map(([k, T]) => { const ok = T.can(c); return {label:T.n, sub:ok === true ? `看${STAT[T.s]}・費用 ${T.cost}` : ok, value:k, disabled:ok !== true || c.gold < T.cost}; }));
+    if (key == null) return;
+    const list = avail(); if (!list.length) return toast('沒有未行動的武將。');
+    const id = await pickOfficer(`由誰${TASKS[key].n}？`, list, TASKS[key].s);
+    if (id == null) return;
+    const r = runTask(key, c, O(id));
+    log(r.err ? r.err : `${O(id).name} ${TASKS[key].n}：${r.msg}`, true);
+  } else if (k === 'attack') {
+    const targets = ADJ[ci].map(C).filter(t => t.owner !== c.owner);
+    if (!targets.length) return toast('沒有相鄰的敵城。');
+    const ti = await choose(`從${c.name}出征`, targets.map(t => ({label:t.name, sub:`${fname(t.owner)}・兵 ${t.troops}・武將 ${t.owner == null ? 0 : servants(t.owner, t.id).length}`, value:t.id})));
+    if (ti == null) return;
+    const pool = avail(); if (p.city === ci) pool.unshift(p);
+    if (!pool.length) return toast('沒有可出征的武將。');
+    const setup = await attackSetup(c, C(ti), pool);
+    if (!setup) return;
+    const t = C(ti);
+    if (t.owner == null && t.troops === 0) {
+      const lead = setup.offs[0];
+      c.troops -= setup.troops; t.owner = c.owner; t.troops = setup.troops; t.delegate = true;
+      setup.offs.forEach(o => { o.city = ti; o.done = true; });
+      t.gov = null; fixGov(t);
+      if (setup.offs.includes(p)) { UI.sel = ti; }
+      log(`${lead.name} 率軍佔領無主的${t.name}。`, true);
+    } else {
+      const B = makeBattle(ci, ti, setup.offs, setup.troops);
+      B.ui = true; B.att.units.forEach(u => B.ctrl.add(u));
+      await fight(B);
+      if (P().status === 'serve' && setup.offs.includes(P())) UI.sel = P().city;
+    }
+  } else if (k === 'recruit') {
+    const list = presentIn(ci).filter(o => (o.status === 'free' && o.id !== G.player) || (o.status === 'captive' && o.force === c.owner));
+    if (!list.length) return toast('此城沒有在野武將或俘虜。');
+    const id = await pickOfficer('登用誰？', list, 'cha', o => o.status === 'captive' ? '俘虜' : `親密 ${G.rel[o.id] || 0}`);
+    if (id == null) return;
+    const t = O(id);
+    const rec = p.city === ci ? p : avail().sort((a, b) => b.cha - a.cha)[0];
+    if (!rec) return toast('沒有可前往登用的武將。');
+    if (t.status === 'captive') return lordCaptives([t]).then(render);
+    const pr = recruitChance(rec, t, false);
+    if (!(await ask(`派${rec.id === G.player ? '你自己' : rec.name}登用${t.name}？（成功率約 ${Math.round(pr*100)}%）`, '登用', '取消'))) return;
+    if (rec.id === G.player) { if (!useAP(20)) return; } else rec.done = true;
+    if (chance(pr)) { enlist(t, c.owner, ci); t.loyalty = rnd(65,90); log(`${t.name} 接受登用，加入我軍。`, true); }
+    else log(`${t.name} 拒絕了登用。`, true);
+  } else if (k === 'appoint') {
+    const list = servants(c.owner, ci);
+    const id = await pickOfficer(`任命${c.name}太守`, list, 'pol');
+    if (id == null) return;
+    if (isRuler(p) && p.city === ci && id !== p.id) return toast('主公所在之城由主公親自統領。');
+    c.gov = id; log(`任命${O(id).name}為${c.name}太守。`, true);
+  } else if (k === 'transfer') {
+    const list = avail(); if (!list.length) return toast('沒有可調動的武將。');
+    const id = await pickOfficer('調動誰？', list, 'lead');
+    if (id == null) return;
+    const dest = await choose(`${O(id).name} 調往`, forceCities(c.owner).filter(x => x.id !== ci).map(x => ({label:x.name, sub:`武將 ${servants(c.owner, x.id).length}`, value:x.id})));
+    if (dest == null) return;
+    const o = O(id); if (c.gov === id) c.gov = null; o.city = dest; o.done = true; fixGov(c); fixGov(C(dest));
+    log(`${o.name} 調往${C(dest).name}。`, true);
+  } else if (k === 'transport') {
+    const dests = ADJ[ci].map(C).filter(x => x.owner === c.owner);
+    if (!dests.length) return toast('沒有相鄰的己方城市。');
+    const r = await transportSetup(c, dests);
+    if (!r) return;
+    const d = C(r.to); c[r.res] -= r.n; d[r.res] += r.n;
+    log(`由${c.name}輸送${({troops:'士兵',gold:'金',food:'糧'})[r.res]} ${r.n} 到${d.name}。`, true);
+  } else if (k === 'reward') {
+    if (c.gold < 100) return toast('金不足（需 100）。');
+    const list = servants(c.owner, ci).filter(o => o.id !== G.player);
+    const id = await pickOfficer('賞賜誰？（金 100）', list, 'cha', o => `忠誠 ${o.loyalty}`);
+    if (id == null) return;
+    const o = O(id); const v = rnd(5, 12); o.loyalty = Math.min(100, o.loyalty + v); c.gold -= 100;
+    log(`賞賜${o.name}，忠誠 +${v}（${o.loyalty}）。`, true);
+  } else if (k === 'delegate') {
+    c.delegate = !c.delegate; toast(c.delegate ? `${c.name}已委任，月底由太守自行處理內政。` : `${c.name}取消委任。`);
+  }
+  render();
+}
+
+// ───────── 介面：通用 ─────────
+function modal(html, cls = '') {
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="sheet ${cls}" role="dialog" aria-modal="true">${html}</div>`;
+  document.body.appendChild(m); return m;
+}
+function choose(title, items, sub = '') {
+  return new Promise(res => {
+    const m = modal(`<h2>${esc(title)}</h2>${sub ? `<p class="muted">${esc(sub)}</p>` : ''}<div class="choices">${items.map((it, i) => `<button data-i="${i}" ${it.disabled ? 'disabled' : ''}><span>${esc(it.label)}</span><small>${esc(it.sub || '')}</small></button>`).join('')}</div><div class="row"><button class="btn" data-x>取消</button></div>`);
+    m.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b && e.target !== m) return;
+      if (e.target === m || b.hasAttribute('data-x')) { m.remove(); res(null); return; }
+      if (b.dataset.i != null) { m.remove(); res(items[+b.dataset.i].value); }
+    });
+  });
+}
+function ask(text, yes, no) {
+  return new Promise(res => {
+    const m = modal(`<p>${esc(text)}</p><div class="row"><button class="btn primary" data-y>${esc(yes)}</button><button class="btn" data-n>${esc(no)}</button></div>`);
+    m.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; m.remove(); res(b.hasAttribute('data-y')); });
+  });
+}
+function notice(text, ok = '確定') { return new Promise(res => { const m = modal(`<p>${esc(text)}</p><div class="row"><button class="btn primary">${esc(ok)}</button></div>`); m.querySelector('button').onclick = () => { m.remove(); res(); }; }); }
+function statCells(o, hi) { return STATK.map(s => `<span class="${hi && s !== hi ? 'muted' : ''}" style="${s === hi ? 'font-weight:700' : ''}">${o[s]}</span>`).join(''); }
+function pickOfficer(title, list, hi, extra) {
+  return new Promise(res => {
+    const sorted = list.slice().sort((a, b) => b[hi] - a[hi]);
+    const m = modal(`<h2>${esc(title)}</h2>
+      <div class="orow muted" style="cursor:default"><span class="nm">姓名</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>
+      <div class="olist" style="max-height:50vh">${sorted.map(o => `<button class="orow" data-id="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(extra ? extra(o) : roleOf(o))}</small></span>${statCells(o, hi)}</button>`).join('')}</div>
+      <div class="row"><button class="btn" data-x>取消</button></div>`);
+    m.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (e.target === m || (b && b.hasAttribute('data-x'))) { m.remove(); res(null); return; }
+      if (b && b.dataset.id) { m.remove(); res(+b.dataset.id); }
+    });
+  });
+}
+function attackSetup(c, t, pool) {
+  return new Promise(res => {
+    const def = t.owner == null ? 0 : servants(t.owner, t.id).length;
+    const m = modal(`<h2>出征${esc(t.name)}</h2>
+      <p class="muted">敵：${esc(fname(t.owner))}・守兵 ${t.troops}・武將 ${def}・城防 ${t.def}</p>
+      <div class="label">選擇出陣武將（最多 5 名，第一位為主將）</div>
+      <div class="olist" style="max-height:38vh">${pool.map((o, i) => `<label class="orow" style="grid-template-columns:24px minmax(0,1fr) repeat(3,32px)"><input type="checkbox" id="pk${o.id}" data-i="${i}" ${i < 3 ? 'checked' : ''}><span class="nm">${esc(o.name)}${o.id === G.player ? '（你）' : ''}</span><span>統${o.lead}</span><span>武${o.war}</span><span>智${o.int}</span></label>`).join('')}</div>
+      <label class="row" for="atk-n">兵力 <input type="range" id="atk-n" min="0" max="${c.troops}" step="100" value="${Math.floor(c.troops * 0.8 / 100) * 100}" style="flex:1"><output id="atk-o" class="num"></output></label>
+      <div class="row"><button class="btn primary" data-go>出陣</button><button class="btn" data-x>取消</button></div>`);
+    const rng = m.querySelector('#atk-n'), out = m.querySelector('#atk-o');
+    const upd = () => out.textContent = `${rng.value} / ${c.troops}`; upd(); rng.oninput = upd;
+    m.addEventListener('change', e => {
+      if (e.target.type !== 'checkbox') return;
+      const on = m.querySelectorAll('input[type=checkbox]:checked');
+      if (on.length > 5) { e.target.checked = false; toast('最多 5 名武將。'); }
+    });
+    m.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.hasAttribute('data-x')) { m.remove(); res(null); return; }
+      const offs = [...m.querySelectorAll('input[type=checkbox]:checked')].map(x => pool[+x.dataset.i]);
+      const n = +rng.value;
+      if (!offs.length) return toast('請選擇至少一名武將。');
+      if (n < 500 && !(t.owner == null && t.troops === 0)) return toast('兵力至少 500。');
+      m.remove(); res({offs, troops:n});
+    });
+  });
+}
+function transportSetup(c, dests) {
+  return new Promise(res => {
+    const m = modal(`<h2>${esc(c.name)}輸送</h2>
+      <label class="row" for="tr-to">目的地 <select id="tr-to">${dests.map(d => `<option value="${d.id}">${esc(d.name)}</option>`).join('')}</select></label>
+      <label class="row" for="tr-res">物資 <select id="tr-res"><option value="troops">士兵（${c.troops}）</option><option value="gold">金（${c.gold}）</option><option value="food">糧（${c.food}）</option></select></label>
+      <label class="row" for="tr-n">數量 <input type="range" id="tr-n" min="0" step="100" style="flex:1"><output id="tr-o" class="num"></output></label>
+      <div class="row"><button class="btn primary" data-go>輸送</button><button class="btn" data-x>取消</button></div>`);
+    const sel = m.querySelector('#tr-res'), rng = m.querySelector('#tr-n'), out = m.querySelector('#tr-o');
+    const upd = () => { rng.max = c[sel.value]; if (+rng.value > c[sel.value]) rng.value = c[sel.value]; out.textContent = rng.value; };
+    sel.onchange = () => { rng.value = Math.floor(c[sel.value] / 2 / 100) * 100; upd(); }; rng.oninput = upd; sel.onchange();
+    m.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      m.remove();
+      if (b.hasAttribute('data-x') || +rng.value <= 0) return res(null);
+      res({to:+m.querySelector('#tr-to').value, res:sel.value, n:+rng.value});
+    });
+  });
+}
+function lordCaptives(list) {
+  return new Promise(res => {
+    const p = P();
+    const row = o => { const pr = recruitChance(p, o, true); return `<div class="orow" style="grid-template-columns:minmax(0,1fr) auto;cursor:default" data-row="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">統${o.lead} 武${o.war} 智${o.int} 政${o.pol} 魅${o.cha}</small></span>${o.status === 'captive' ? `<span class="row"><button class="btn small" data-a="hire" data-id="${o.id}">登用 ${Math.round(pr*100)}%</button><button class="btn small" data-a="free" data-id="${o.id}">釋放</button><button class="btn small" data-a="kill" data-id="${o.id}">處斬</button></span>` : `<span class="muted">${esc(roleOf(o))}</span>`}</div>`; };
+    const m = modal(`<h2>處置俘虜</h2><div class="olist" id="cap-list">${list.map(row).join('')}</div><div class="row"><button class="btn" data-a="done">完成</button></div>`);
+    m.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const a = b.dataset.a;
+      if (a === 'done') { m.remove(); res(); return; }
+      const o = O(+b.dataset.id);
+      if (a === 'hire') { if (chance(recruitChance(p, o, true))) { o.status = 'serve'; o.loyalty = rnd(50,75); log(`${o.name} 歸降我軍。`, true); } else { log(`${o.name} 不肯歸降。`, true); toast(`${o.name} 不肯歸降。`); } }
+      if (a === 'free') { freeOfficer(o, o.city); log(`釋放了${o.name}。`, true); }
+      if (a === 'kill') { killOfficer(o, `處斬了${o.name}。`); p.fame = Math.max(0, p.fame - 15); }
+      m.querySelector(`[data-row="${o.id}"]`).outerHTML = row(o);
+    });
+  });
+}
+function showBusy(on) {
+  let el = $('#busy');
+  if (on && !el) { el = document.createElement('div'); el.id = 'busy'; el.className = 'busy'; el.textContent = '群雄行動中'; document.body.appendChild(el); }
+  if (!on && el) el.remove();
+}
+
+// ───────── 介面：戰場 ─────────
+function openBattle(B) {
+  B.m = modal('', 'wide'); B.sheet = B.m.firstElementChild; B.all = [...B.att.units, ...B.def.units];
+  B.sheet.addEventListener('click', e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (B.pendYN) { if (a !== 'yes' && a !== 'no') return; const r = B.pendYN; B.pendYN = null; r(a === 'yes'); return; }
+    if (B.pendDuel) { if (!['atk','def','crit','ok'].includes(a)) return; const r = B.pendDuel; B.pendDuel = null; r(a); return; }
+    if (B.pendEnd && a === 'close') { const r = B.pendEnd; B.pendEnd = null; r(); return; }
+    if (!B.pend) return;
+    if (a === 'unit') {
+      if (!B.pend.act) return;
+      const u = B.all[+b.dataset.i];
+      if (!foeOf(B, B.pend.u).units.includes(u) || u.troops <= 0 || u.gone) return;
+      if (B.pend.act === 'duel' && u.o.id < 0) return toast('守備兵無法單挑。');
+      const {res, act} = B.pend; B.pend = null; res({type:act, t:u});
+    } else if (a === 'retreat' || a === 'auto') { const {res} = B.pend; B.pend = null; res({type:a}); }
+    else { B.pend.act = a; renderBattle(B); }
+  });
+  renderBattle(B);
+}
+function unitCard(B, u) {
+  const i = B.all.indexOf(u);
+  const dead = u.troops <= 0 || u.gone;
+  const active = B.pend && B.pend.u === u;
+  const target = B.pend && B.pend.act && !dead && foeOf(B, B.pend.u).units.includes(u);
+  const col = fcolor(sideOf(B, u).force) || 'var(--muted)';
+  return `<button class="unit ${active ? 'active' : ''} ${target ? 'target' : ''} ${dead ? 'dead' : ''}" data-a="unit" data-i="${i}" ${target ? '' : 'tabindex="-1"'}>
+    <div class="top"><b>${esc(u.o.name)}${u.o.id === G.player ? '（你）' : ''}</b><span class="num">${u.gone ? '被擒' : u.troops}</span></div>
+    <div class="hp"><b style="width:${Math.round(100 * u.troops / u.max)}%;background:${col}"></b></div>
+    <small class="muted num">統${u.o.lead} 武${u.o.war} 智${u.o.int}${u.conf ? '・混亂' : ''}</small></button>`;
+}
+function renderBattle(B, ctrlHtml) {
+  if (!B.sheet) return;
+  const tc = C(B.city);
+  let ctrl = ctrlHtml || '';
+  if (!ctrl && B.pend) {
+    const u = B.pend.u;
+    ctrl = B.pend.act ? `<div class="row"><b>${esc(u.o.name)}</b>：選擇敵方部隊作為目標<button class="btn small" data-a="back">返回</button></div>`
+      : `<div class="row"><b>${esc(u.o.name)}</b> 的行動：
+        <button class="btn" data-a="atk">攻擊</button><button class="btn" data-a="fire">火計</button><button class="btn" data-a="conf">混亂</button>
+        ${u.o.id >= 0 ? '<button class="btn" data-a="duel">單挑</button>' : ''}
+        <span class="spacer" style="flex:1"></span><button class="btn small" data-a="auto">委任</button><button class="btn small" data-a="retreat">撤退</button></div>`;
+  }
+  B.sheet.innerHTML = `<div class="bt">
+    <div class="bt-head"><h2>${esc(tc.name)}之戰</h2><span class="muted num">第 ${Math.min(B.round, MAX_ROUND)} / ${MAX_ROUND} 回合・城防 ${tc.def}</span></div>
+    <div class="bt-sides">
+      <div class="bt-side"><h3>攻方・${esc(fname(B.att.force))}（${sumLive(B.att)}）</h3>${B.att.units.map(u => unitCard(B, u)).join('')}</div>
+      <div class="bt-side"><h3>守方・${esc(fname(B.def.force))}（${sumLive(B.def)}）</h3>${B.def.units.map(u => unitCard(B, u)).join('') || '<p class="muted">無人防守</p>'}</div>
+    </div>
+    ${ctrl}
+    <ol class="bt-log">${B.logs.slice(0, 40).map(t => `<li>${esc(t)}</li>`).join('')}</ol></div>`;
+  const back = B.sheet.querySelector('[data-a="back"]');
+  if (back) back.onclick = e => { e.stopPropagation(); B.pend.act = null; renderBattle(B); };
+}
+function askAction(B, u) { return new Promise(res => { B.pend = {u, res, act:null}; renderBattle(B); }); }
+function askYesNo(B, text, y, n) { return new Promise(res => { B.pendYN = res; renderBattle(B, `<div class="row"><b>${esc(text)}</b><button class="btn primary" data-a="yes">${esc(y)}</button><button class="btn" data-a="no">${esc(n)}</button></div>`); }); }
+function duelAsk(B, a, d, st, result) {
+  return new Promise(res => {
+    const bar = (o, hp) => `<div><div class="top row" style="justify-content:space-between"><b>${esc(o.name)}</b><span class="num">武力 ${o.war}・體力 ${Math.max(0, Math.round(hp))}</span></div><div class="hp"><b style="width:${clamp(hp, 0, 100)}%;background:var(--seal)"></b></div></div>`;
+    const btns = result ? `<div class="row"><b>${result === 'draw' ? '不分勝負' : `${esc(result.o.name)} 獲勝！`}</b><button class="btn primary" data-a="ok">繼續</button></div>`
+      : `<div class="row"><button class="btn" data-a="atk">攻擊</button><button class="btn" data-a="def">防守</button><button class="btn" data-a="crit">全力一擊</button><small class="muted">防守可剋制全力一擊，全力一擊壓過攻擊。</small></div>`;
+    B.pendDuel = res;
+    renderBattle(B, `<div class="duel"><h3>單挑・第 ${st.r} 回合</h3>${bar(a.o, st.ha)}${bar(d.o, st.hd)}<p class="muted">${esc(st.text || '雙方策馬而出。')}</p>${btns}</div>`);
+  });
+}
+function battleEnd(B) {
+  return new Promise(res => {
+    B.pendEnd = res;
+    const mine = B.ctrl.size ? (B.att.units.some(u => B.ctrl.has(u)) ? 'att' : 'def') : null;
+    const won = mine === B.win;
+    renderBattle(B, `<div class="row"><h3 style="color:${won ? 'var(--good)' : 'var(--bad)'}">${B.win === 'att' ? `攻方勝利，${C(B.city).name}陷落` : `守方勝利，守住${C(B.city).name}`}</h3><button class="btn primary" data-a="close">結束</button></div>`);
+  }).then(() => B.m.remove());
+}
+
+// ───────── 介面：主畫面 ─────────
+const app = $('#app');
+function render() {
+  if (!G || G.player < 0) return renderTitle();
+  if (UI.repick) { UI.repick = false; return renderTitle(true); }
+  if (G.over) { G = null; return renderTitle(); }
+  if (P().status === 'dead') return renderTitle(true);
+  const p = P(); const r = roleOf(p);
+  if (UI.sel == null) UI.sel = p.city;
+  app.innerHTML = `
+  <header class="bar wrap">
+    <span class="date num">${G.year}年 ${G.month}月</span>
+    <span class="who"><span class="mini-seal">${esc(p.name)}</span><span>${esc(r)}${p.status === 'serve' ? `・${esc(fname(p.force))}・${esc(rankName(p))}` : ''}</span></span>
+    <span class="muted">所在 <b style="color:var(--ink)">${esc(C(p.city).name)}</b></span>
+    <span class="ap" title="行動力"><span class="muted">行動力</span><i><b style="width:${G.ap}%"></b></i><span class="num">${G.ap}</span></span>
+    <span class="muted num">名聲 <b style="color:var(--ink)">${p.fame}</b>・功績 <b style="color:var(--ink)">${p.merit}</b>・私財 <b style="color:var(--ink)">${G.pgold}</b></span>
+    <span class="spacer"></span>
+    <span class="row"><button class="btn small" id="b-forces">勢力</button><button class="btn small" id="b-save">存檔</button><button class="btn small" id="b-help">說明</button><button class="btn small" id="b-quit">標題</button><button class="btn primary" id="b-end">結束本月</button></span>
+  </header>
+  <main class="game">
+    <section class="mapwrap">${mapSvg()}</section>
+    <aside class="side wrap">${sidePanel()}</aside>
+  </main>
+  <section class="logwrap wrap"><h3 style="margin-bottom:6px">記事</h3><ol class="log">${G.log.slice(0, 80).map(l => `<li class="${l.me ? 'me' : ''}"><time>${l.d}</time><span>${esc(l.t)}</span></li>`).join('')}</ol></section>`;
+  app.querySelectorAll('.city').forEach(g => {
+    const pickCity = () => { UI.sel = +g.dataset.c; render(); };
+    g.addEventListener('click', pickCity);
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickCity(); } });
+  });
+  $('#b-end').onclick = endMonth;
+  $('#b-save').onclick = () => toast(saveTo(SAVE_KEY) ? '已存檔。' : '無法存檔（瀏覽器不允許儲存）。');
+  $('#b-help').onclick = help;
+  $('#b-forces').onclick = forcesView;
+  $('#b-quit').onclick = async () => { if (await ask('回到標題畫面？未存檔的進度會保留在自動存檔。', '回到標題', '取消')) { saveTo(AUTO_KEY); G = null; render(); } };
+  app.querySelectorAll('[data-pa]').forEach(b => b.onclick = () => doPersonal(b.dataset.pa));
+  app.querySelectorAll('[data-ca]').forEach(b => b.onclick = () => doCommand(b.dataset.ca, UI.sel));
+  app.querySelectorAll('[data-oid]').forEach(b => b.onclick = () => officerView(+b.dataset.oid));
+}
+function mapSvg() {
+  const p = P();
+  const zhou = {};
+  G.cities.forEach(c => { (zhou[c.zhou] = zhou[c.zhou] || []).push(c); });
+  let s = `<svg id="map" viewBox="0 0 1000 720" role="img" aria-label="中國輿圖"><rect class="m-land" width="1000" height="720"/><path class="m-sea" d="${SEA}"/>`;
+  Object.entries(zhou).forEach(([z, cs]) => { const x = cs.reduce((a, c) => a + c.x, 0) / cs.length, y = cs.reduce((a, c) => a + c.y, 0) / cs.length; s += `<text class="m-zhou" x="${x}" y="${y + 14}">${z}</text>`; });
+  RIVERS.forEach(([n, d, lx, ly]) => { s += `<path class="m-river" d="${d}"/><text class="m-rlabel" x="${lx}" y="${ly}">${n}</text>`; });
+  ROADS.split(' ').forEach(r => { const [a, b] = r.split('-').map(cityIdx); s += `<line class="m-road" x1="${C(a).x}" y1="${C(a).y}" x2="${C(b).x}" y2="${C(b).y}"/>`; });
+  G.cities.forEach(c => {
+    const col = fcolor(c.owner);
+    const sz = 8 + c.size * 2;
+    s += `<g class="city" data-c="${c.id}" tabindex="0" role="button" aria-label="${c.name}，${fname(c.owner)}" transform="translate(${c.x},${c.y})">`;
+    if (UI.sel === c.id) s += `<rect class="m-sel" x="${-sz - 6}" y="${-sz - 6}" width="${(sz + 6) * 2}" height="${(sz + 6) * 2}"/>`;
+    if (p.city === c.id) s += `<circle class="m-me" r="${sz + 11}"/>`;
+    s += col ? `<rect class="cs" x="${-sz}" y="${-sz}" width="${sz * 2}" height="${sz * 2}" style="fill:${col}"/>` : `<rect class="m-neutral" x="${-sz}" y="${-sz}" width="${sz * 2}" height="${sz * 2}"/>`;
+    s += `<text class="m-label" y="${sz + 16}">${c.name}</text>`;
+    if (c.troops) s += `<text class="m-troop" y="${sz + 29}">${fmtN(c.troops)}</text>`;
+    if (p.city === c.id) s += `<rect class="m-flag" x="${sz + 2}" y="${-sz - 18}" width="18" height="16"/><text class="m-flagt" x="${sz + 11}" y="${-sz - 6}">你</text>`;
+    s += `</g>`;
+  });
+  return s + '</svg>';
+}
+function sidePanel() {
+  const p = P(), r = roleOf(p), c = C(UI.sel);
+  const stats = o => `<div class="stats">${STATK.map(s => `<div><small>${STAT[s]}</small><b>${o[s]}</b></div>`).join('')}</div>`;
+  let h = `<section class="sec"><h3>本人<span class="muted" style="font-weight:400;font-size:13px">${esc(p.name)}・${age(p)} 歲・${esc(r)}</span></h3>${stats(p)}
+    <div class="acts">${personalActs().map(a => `<button class="btn small" data-pa="${a.k}" ${a.dis || G.ap < a.cost ? 'disabled' : ''} title="${esc(a.dis || (a.cost ? `行動力 ${a.cost}` : ''))}">${a.n}${a.cost ? `<small class="muted"> ${a.cost}</small>` : ''}</button>`).join('')}</div>
+    ${personalActs().filter(a => a.dis).map(a => `<small class="muted">${a.n}：${esc(a.dis)}</small>`).join('<br>')}</section>`;
+  const gov = c.gov != null ? O(c.gov).name : '—';
+  h += `<section class="sec"><h3>${esc(c.name)}<span class="muted" style="font-weight:400;font-size:13px">${esc(c.zhou)}・${c.owner != null ? `<span class="dot" style="background:${fcolor(c.owner)}"></span>${esc(fname(c.owner))}` : '無主'}・太守 ${esc(gov)}${c.owner != null && c.delegate ? '・委任' : ''}</span></h3>
+    <div class="kv"><div><span>金</span>${c.gold}</div><div><span>糧</span>${c.food}</div><div><span>兵</span>${c.troops}</div><div><span>訓練</span>${c.train}</div>
+    <div><span>農業</span>${c.farm}/${c.farmMax}</div><div><span>商業</span>${c.comm}/${c.commMax}</div><div><span>城防</span>${c.def}/${c.defMax}</div><div><span>治安</span>${c.order}</div><div><span>人口</span>${fmtN(c.pop)}</div></div>`;
+  const people = presentIn(c.id).sort((a, b) => ({主公:0,太守:1,武將:2,俘虜:3,在野:4}[roleOf(a)] - {主公:0,太守:1,武將:2,俘虜:3,在野:4}[roleOf(b)]) || total(b) - total(a));
+  h += `<div class="orow muted" style="cursor:default"><span class="nm">人物（${people.length}）</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>
+    <div class="olist">${people.map(o => `<button class="orow ${o.done ? 'done' : ''}" data-oid="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(roleOf(o))}${o.status === 'serve' && o.force !== c.owner ? `・${esc(fname(o.force))}` : ''}${o.done ? '・已行動' : ''}</small></span>${statCells(o)}</button>`).join('') || '<p class="muted">沒有人。</p>'}</div></section>`;
+  if (canCommand(c.id)) {
+    const lord = isRuler(p);
+    const cmds = [['task','指派內政'],['attack','出征'],['recruit','登用']];
+    if (lord) cmds.push(['appoint','任命太守'],['transfer','調動'],['transport','輸送'],['reward','賞賜'],['delegate', c.delegate ? '取消委任' : '委任']);
+    h += `<section class="sec"><h3>軍令<span class="muted" style="font-weight:400;font-size:13px">${lord ? '主公可向任何己方城市下令' : '太守只可統領本城'}</span></h3><div class="acts">${cmds.map(([k, n]) => `<button class="btn small" data-ca="${k}">${n}</button>`).join('')}</div>
+      <small class="muted">下令不耗行動力，但每名武將每月只可行動一次。${lord ? '委任中的城市，月底由太守處理餘下內政。' : ''}</small></section>`;
+  } else if (UI.sel !== p.city) {
+    h += `<p class="muted">點選地圖上的城市查看情報。<button class="btn small" id="b-home" onclick="UI.sel=P().city;render()">回到所在城市</button></p>`;
+  }
+  return h;
+}
+function officerView(id) {
+  const o = O(id);
+  const bars = STATK.map(s => `<div class="row" style="gap:10px"><span style="width:3em">${STAT[s]}</span><span class="hp" style="flex:1;height:8px"><b style="width:${o[s]}%;background:var(--ink)"></b></span><b class="num" style="width:2.5em;text-align:right">${o[s]}</b></div>`).join('');
+  const m = modal(`<h2>${esc(o.name)}</h2>
+    <p class="muted">${age(o)} 歲・${esc(roleOf(o))}${o.status === 'serve' ? `・${esc(fname(o.force))}・${esc(rankName(o))}` : ''}・出身${esc(C(o.home).name)}・現在${esc(C(o.city).name)}</p>
+    <div style="display:grid;gap:4px">${bars}</div>
+    <div class="kv"><div><span>名聲</span>${o.fame}</div><div><span>功績</span>${o.merit}</div>${o.status === 'serve' && !isRuler(o) ? `<div><span>忠誠</span>${o.loyalty}</div>` : ''}${o.id !== G.player ? `<div><span>與你親密</span>${G.rel[o.id] || 0}</div>` : ''}</div>
+    <div class="row"><button class="btn">關閉</button></div>`);
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+}
+function forcesView() {
+  const rows = G.forces.filter(f => f.alive).map(f => ({f, cs:forceCities(f.id), offs:servants(f.id)})).sort((a, b) => b.cs.length - a.cs.length);
+  const m = modal(`<h2>群雄勢力</h2><div class="tbl-wrap" style="max-height:60vh"><table><thead><tr><th>勢力</th><th>城</th><th>武將</th><th>兵力</th><th>本城</th></tr></thead><tbody>${rows.map(({f, cs, offs}) => `<tr${f.id === P().force && P().status === 'serve' ? ' class="on"' : ''}><td><span class="dot" style="background:${f.color}"></span>${esc(fname(f.id))}</td><td>${cs.length}</td><td>${offs.length}</td><td>${cs.reduce((s, c) => s + c.troops, 0)}</td><td>${esc(C(O(f.ruler).city).name)}</td></tr>`).join('')}</tbody></table></div><div class="row"><button class="btn">關閉</button></div>`, 'wide');
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+}
+function help() {
+  const m = modal(`<h2>遊戲說明</h2>
+    <p>你可以選擇任何一名武將，以其身分在亂世中生存。身分會隨你的作為改變：</p>
+    <p><b>在野</b>：拜訪名士、鍛鍊能力、討伐賊寇累積名聲。可向所在城市的君主求仕；名聲達 ${RISE_FAME} 後，可在無主城市舉兵，親密度 50 以上的在野人士會追隨你。</p>
+    <p><b>武將</b>：親自執行內政累積功績，功績提升官位。功績與能力夠高，主公會任命你為太守。主公出兵時，你可能被派隨軍出陣。亦可下野重新選擇主公。</p>
+    <p><b>太守</b>：統領本城武將，可指派內政、出征相鄰城市、登用人才，亦可脫離主公獨立。</p>
+    <p><b>主公</b>：向所有己方城市下令，任命太守、調動武將、輸送物資、處置俘虜。統一全部 ${G.cities.length} 座城市即可平定天下。</p>
+    <p><b>戰鬥</b>：每回合為每支部隊選擇攻擊、火計、混亂或單挑。智力高則計策易成；武力高可單挑擒將。攻城時守方受城防保護。${MAX_ROUND} 回合內未能攻下即撤兵。</p>
+    <p><b>時間</b>：每月有 ${AP_MAX} 行動力供本人行動；下令不耗行動力。每月結算金錢，七月收糧。武將會依史實年份登場及逝世（可在開局時選擇延長壽命）。</p>
+    <p class="muted">每月自動存檔；「存檔」按鈕另存一份。資料只存在此瀏覽器。</p>
+    <div class="row"><button class="btn primary">明白</button></div>`);
+  m.addEventListener('click', e => { if (e.target === m || e.target.closest('button')) m.remove(); });
+}
+
+// ───────── 介面：標題 ─────────
+function renderTitle(repick) {
+  if (!repick) newGame(UI.sc, UI.life);
+  const hasAuto = !!readSave(AUTO_KEY), hasSave = !!readSave(SAVE_KEY);
+  const S = SCENARIOS[G.sc];
+  const list = G.officers.filter(o => ['serve','free'].includes(o.status) && (!repick || true))
+    .filter(o => UI.tab === 'all' || roleOf(o) === UI.tab || (UI.tab === '武將' && roleOf(o) === '太守'))
+    .filter(o => !UI.q || o.name.includes(UI.q) || fname(o.status === 'serve' ? o.force : null).includes(UI.q));
+  const sk = UI.sort;
+  list.sort((a, b) => sk ? b[sk] - a[sk] : (({主公:0,太守:1,武將:2,在野:3}[roleOf(a)] - {主公:0,太守:1,武將:2,在野:3}[roleOf(b)]) || total(b) - total(a)));
+  const tag = o => { const r = roleOf(o); return `<span class="tag ${r === '主公' ? 'lord' : r === '太守' ? 'gov' : r === '在野' ? 'free' : ''}">${r}</span>`; };
+  app.innerHTML = `<div class="title wrap">
+    <div class="title-head"><div class="big-seal">亂世錄</div><div style="display:grid;gap:8px"><h1 style="font-size:clamp(28px,5vw,44px)">三國亂世錄</h1><p class="muted">選擇任何一名武將，從在野之士、一介武將、一城太守到一方主公，走出自己的三國。</p>
+      ${!repick && (hasAuto || hasSave) ? `<div class="row">${hasAuto ? '<button class="btn" id="t-auto">繼續（自動存檔）</button>' : ''}${hasSave ? '<button class="btn" id="t-load">讀取存檔</button>' : ''}</div>` : ''}</div></div>
+    ${repick ? `<p><b>${G.year}年${G.month}月</b>：選擇一名在世武將，繼續這個天下。</p>` : `<div class="sec"><div class="label">劇本</div><div class="scen">${SCENARIOS.map((s, i) => `<button data-sc="${i}" aria-pressed="${i === G.sc}"><span class="muted num">${s.year}年1月</span><b>${s.name}</b><span class="muted">${s.desc}</span></button>`).join('')}</div>
+      <div class="row"><span class="label">武將壽命</span><div class="tabs"><button data-life="hist" aria-pressed="${UI.life === 'hist'}">史實</button><button data-life="long" aria-pressed="${UI.life === 'long'}">延長十五年</button></div></div></div>`}
+    <div class="picker"><div class="label">選擇你的武將${repick ? '' : `・${S.name}`}</div>
+      <div class="row"><div class="tabs">${[['all','全部'],['主公','君主'],['武將','武將'],['在野','在野']].map(([k, n]) => `<button data-tab="${k}" aria-pressed="${UI.tab === k}">${n}</button>`).join('')}</div><input type="search" id="t-q" placeholder="搜尋姓名或勢力" value="${esc(UI.q)}"></div>
+      <div class="tbl-wrap"><table><thead><tr><th data-sort="">姓名</th><th data-sort="">身分</th><th data-sort="">勢力・所在</th>${STATK.map(s => `<th data-sort="${s}">${STAT[s]}${UI.sort === s ? ' ▾' : ''}</th>`).join('')}<th>年齡</th></tr></thead>
+      <tbody>${list.map(o => `<tr data-pick="${o.id}" class="${UI.pick === o.id ? 'on' : ''}"><td><b>${esc(o.name)}</b></td><td>${tag(o)}</td><td>${o.status === 'serve' ? `<span class="dot" style="background:${fcolor(o.force)}"></span>${esc(fname(o.force))}・` : ''}${esc(C(o.city).name)}</td>${STATK.map(s => `<td>${o[s]}</td>`).join('')}<td>${age(o)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="row"><button class="btn primary" id="t-start" ${UI.pick == null || !list.some(o => o.id === UI.pick) ? 'disabled' : ''}>${UI.pick != null && list.some(o => o.id === UI.pick) ? `以${esc(O(UI.pick).name)}開始` : '請先選擇武將'}</button><small class="muted">能力數值為本作自訂，供遊戲平衡之用。</small></div>
+    </div></div>`;
+  const rerender = () => renderTitle(repick);
+  app.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => { UI.sc = +b.dataset.sc; UI.pick = null; renderTitle(); });
+  app.querySelectorAll('[data-life]').forEach(b => b.onclick = () => { UI.life = b.dataset.life; renderTitle(); });
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { UI.tab = b.dataset.tab; rerender(); });
+  app.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { UI.sort = b.dataset.sort || null; rerender(); });
+  app.querySelectorAll('[data-pick]').forEach(r => { r.onclick = () => { UI.pick = +r.dataset.pick; rerender(); }; r.ondblclick = () => startAs(+r.dataset.pick); });
+  const q = $('#t-q'); q.oninput = () => { UI.q = q.value.trim(); const pos = q.selectionStart; rerender(); const n = $('#t-q'); n.focus(); n.setSelectionRange(pos, pos); };
+  $('#t-start').onclick = () => { if (UI.pick != null) startAs(UI.pick); };
+  const la = $('#t-auto'), ls = $('#t-load');
+  if (la) la.onclick = () => { if (loadFrom(AUTO_KEY)) render(); };
+  if (ls) ls.onclick = () => { if (loadFrom(SAVE_KEY)) render(); };
+}
+
+// ───────── 存檔 ─────────
+function saveTo(k) { try { localStorage.setItem(k, JSON.stringify(G)); return true; } catch (e) { return false; } }
+function readSave(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function loadFrom(k) {
+  try { const s = readSave(k); const g = s && JSON.parse(s); if (!g || !g.cities || g.player < 0) return false; G = g; UI.sel = P().city; return true; }
+  catch (e) { toast('存檔損壞，無法讀取。'); return false; }
+}
+
+render();
+</script>
+</body>
+</html>
