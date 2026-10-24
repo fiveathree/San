@@ -169,6 +169,11 @@ p{margin:0}
 .m-sel{fill:none;stroke:var(--ink);stroke-width:2}
 .m-me{fill:none;stroke:var(--seal);stroke-width:3;stroke-dasharray:5 3}
 .m-flag{fill:var(--seal)}
+.m-target{fill:none;stroke:var(--seal);stroke-width:3}
+.m-dim{opacity:.35}
+.m-pickable .m-label{fill:var(--seal)}
+@media (prefers-reduced-motion: no-preference){.m-target{animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{50%{stroke-width:6;opacity:.5}}}
+.pickbar{flex:none;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:4px 8px;border:1px solid var(--seal);background:var(--panel)}
 .m-flagt{fill:var(--seal-ink);font:700 11px var(--font-d);text-anchor:middle}
 
 /* 覆蓋卷 */
@@ -563,6 +568,17 @@ function recruitChance(rec, t, captive) {
   if (rec.id === G.player) p += (G.rel[t.id] || 0) / 200;
   if (captive) p -= 0.15;
   return clamp(p, 0.05, 0.9);
+}
+// 登用他城人物：在野、己方俘虜，或敵方武將（看忠誠）；離開本城成功率略降
+function targetChance(rec, t, ci) {
+  if (t.status === 'captive') return recruitChance(rec, t, true);
+  let p = recruitChance(rec, t, false);
+  if (t.status === 'serve') { if (isRuler(t)) return 0; p = p * clamp((100 - t.loyalty) / 50, 0.05, 1) - 0.05; }
+  if (t.city !== ci) p -= 0.05;
+  return clamp(p, t.status === 'serve' ? 0.01 : 0.05, 0.9);
+}
+function recruitScope(ci) {
+  return isRuler(P()) ? G.cities.map(x => x.id) : [ci, ...ADJ[ci]];
 }
 function freeOfficer(o, ci) {
   if (o.status === 'serve' && C(o.city).gov === o.id) C(o.city).gov = null;
@@ -1055,13 +1071,12 @@ function canCommand(ci) {
   return c.gov === p.id && p.city === ci;
 }
 async function doPersonal(k) {
+  if (UI.pickMap) endPick(null);
   const p = P(), c = C(p.city);
   if (k === 'move') {
-    const opts = ADJ[p.city].map(C).map(t => {
-      const ok = p.status === 'free' || t.owner === p.force;
-      return {label:t.name, sub:`${fname(t.owner)}`, value:t.id, disabled:!ok};
-    });
-    const to = await choose('移動到', opts, p.status === 'serve' ? '仕官中只可在己方城市之間移動。' : '');
+    const targets = ADJ[p.city].filter(i => p.status === 'free' || C(i).owner === p.force);
+    if (!targets.length) return toast('沒有可前往的相鄰己方城市。');
+    const to = await pickOnMap(p.status === 'serve' ? '點選相鄰的己方城市' : '點選相鄰城市', targets);
     if (to == null || !useAP(40)) return;
     if (C(p.city).gov === p.id && !isRuler(p)) C(p.city).gov = null;
     p.city = to; UI.sel = to;
@@ -1148,6 +1163,7 @@ async function doPersonal(k) {
 }
 
 async function doCommand(k, ci) {
+  if (UI.pickMap) endPick(null);
   const p = P(), c = C(ci);
   const avail = () => servants(c.owner, ci).filter(o => o.id !== G.player && !o.done);
   if (k === 'task') {
@@ -1182,19 +1198,30 @@ async function doCommand(k, ci) {
       if (P().status === 'serve' && setup.offs.includes(P())) UI.sel = P().city;
     }
   } else if (k === 'recruit') {
-    const list = presentIn(ci).filter(o => (o.status === 'free' && o.id !== G.player) || (o.status === 'captive' && o.force === c.owner));
-    if (!list.length) return toast('此城沒有在野武將或俘虜。');
-    const id = await pickOfficer('登用誰？', list, 'cha', o => o.status === 'captive' ? '俘虜' : `親密 ${G.rel[o.id] || 0}`);
+    const scope = new Set(recruitScope(ci));
+    const recs = avail(); if (p.city === ci && G.ap >= 20) recs.unshift(p);
+    if (!recs.length) return toast('本城沒有未行動、可派去登用的武將。');
+    const best = recs.reduce((a, b) => b.cha > a.cha ? b : a);
+    const list = G.officers.filter(o => scope.has(o.city) && o.id !== G.player && (
+      o.status === 'free' || (o.status === 'captive' && o.force === c.owner) || (o.status === 'serve' && o.force !== c.owner && !isRuler(o))));
+    if (!list.length) return toast('範圍內沒有可登用的人物。');
+    const kind = o => o.status === 'free' ? '在野' : o.status === 'captive' ? '俘虜' : fname(o.force);
+    const id = await pickOfficer(isRuler(p) ? '登用誰？（全國）' : '登用誰？（本城及相鄰城市）', list, 'cha', o => `${C(o.city).name}・${kind(o)}・約 ${Math.round(targetChance(best, o, ci) * 100)}%`, o => targetChance(best, o, ci));
     if (id == null) return;
     const t = O(id);
-    const rec = p.city === ci ? p : avail().sort((a, b) => b.cha - a.cha)[0];
-    if (!rec) return toast('沒有可前往登用的武將。');
-    if (t.status === 'captive') return lordCaptives([t]).then(render);
-    const pr = recruitChance(rec, t, false);
-    if (!(await ask(`派${rec.id === G.player ? '你自己' : rec.name}登用${t.name}？（成功率約 ${Math.round(pr*100)}%）`, '登用', '取消'))) return;
+    if (t.status === 'captive' && isRuler(p)) return lordCaptives([t]).then(render);
+    const rid = recs.length === 1 ? recs[0].id : await pickOfficer(`派誰去${C(t.city).name}登用${t.name}？`, recs, 'cha', o => `約 ${Math.round(targetChance(o, t, ci) * 100)}%${o.id === G.player ? '・你（行動力 20）' : ''}`);
+    if (rid == null) return;
+    const rec = O(rid), pr = targetChance(rec, t, ci);
+    if (!(await ask(`派${rec.id === G.player ? '你自己' : rec.name}登用${C(t.city).name}的${t.name}（${kind(t)}）？成功率約 ${Math.round(pr*100)}%`, '登用', '取消'))) return;
     if (rec.id === G.player) { if (!useAP(20)) return; } else rec.done = true;
-    if (chance(pr)) { enlist(t, c.owner, ci); t.loyalty = rnd(65,90); log(`${t.name} 接受登用，加入我軍。`, true); }
-    else log(`${t.name} 拒絕了登用。`, true);
+    if (chance(pr)) {
+      const from = t.city, old = t.status === 'serve' ? t.force : null;
+      if (C(from).gov === t.id) C(from).gov = null;
+      enlist(t, c.owner, ci); t.loyalty = rnd(65,90);
+      if (old != null) fixGov(C(from));
+      log(`${t.name} 接受登用，${old != null ? `離開${fname(old)}，` : ''}${from !== ci ? `由${C(from).name}前來` : ''}加入我軍。`, true);
+    } else log(`${t.name} 拒絕了${rec.id === G.player ? '你' : rec.name}的登用。`, true);
   } else if (k === 'appoint') {
     const list = servants(c.owner, ci);
     const id = await pickOfficer(`任命${c.name}太守`, list, 'pol');
@@ -1292,9 +1319,9 @@ function ask(text, yes, no) {
 function notice(text, ok = '確定') { return new Promise(res => { const m = modal(`<p>${esc(text)}</p><div class="row"><button class="btn primary">${esc(ok)}</button></div>`); m.querySelector('button').onclick = () => { m.remove(); res(); }; }); }
 function statCells(o, hi) { return STATK.map(s => `<span class="${hi && s !== hi ? 'muted' : ''}" style="${s === hi ? 'font-weight:700' : ''}">${o[s]}</span>`).join(''); }
 const statHead = (first) => `<div class="orow head"><span class="nm">${esc(first)}</span>${STATK.map(s => `<span>${STAT[s][0]}</span>`).join('')}</div>`;
-function pickOfficer(title, list, hi, extra) {
+function pickOfficer(title, list, hi, extra, rank) {
   return new Promise(res => {
-    const sorted = list.slice().sort((a, b) => b[hi] - a[hi]);
+    const sorted = list.slice().sort(rank ? (a, b) => rank(b) - rank(a) || b[hi] - a[hi] : (a, b) => b[hi] - a[hi]);
     UI.pages.pick = 0;
     const rows = sorted.map(o => `<button class="orow" data-id="${o.id}"><span class="nm">${esc(o.name)} <small class="muted">${esc(extra ? extra(o) : roleLabel(o))}</small></span>${statCells(o, hi)}</button>`);
     const m = modal(`<h2>${esc(title)}</h2>${listBox('pick', rows, statHead('姓名'))}<div class="row"><button class="btn" data-x>取消</button></div>`, 'tall');
@@ -1477,6 +1504,7 @@ function render() {
   </header>
   <main class="game" data-view="${UI.view}">
     <section class="mapcol">
+      ${UI.pickMap ? `<div class="pickbar"><b>${esc(UI.pickMap.title)}</b><span class="muted">紅圈為可選城市</span><span class="spacer"></span><button class="btn small" id="b-pickx">取消</button></div>` : ''}
       <div class="mapbox">${mapSvg()}</div>
       <ol class="ticker">${G.log.slice(0, 2).map(l => `<li><time>${l.d}</time>${esc(l.t)}</li>`).join('')}</ol>
       <div class="cstrip"><span><b>${esc(c.name)}</b> <span class="muted">${esc(fname(c.owner))}・兵 ${fmtN(c.troops)}・${presentIn(c.id).length} 人</span></span><button class="btn small" data-view="city">城市詳情</button></div>
@@ -1493,14 +1521,16 @@ function mapSvg() {
   const p = P();
   const zhou = {};
   G.cities.forEach(c => { (zhou[c.zhou] = zhou[c.zhou] || []).push(c); });
-  let s = `<svg id="map" viewBox="0 0 1000 720" role="img" aria-label="中國輿圖"><rect class="m-land" x="-500" y="-500" width="2000" height="1720"/><path class="m-sea" d="${SEA}"/>`;
+  const pick = UI.pickMap ? new Set(UI.pickMap.targets) : null;
+  let s = `<svg id="map" class="${pick ? 'picking' : ''}" viewBox="0 0 1000 720" role="img" aria-label="中國輿圖"><rect class="m-land" x="-500" y="-500" width="2000" height="1720"/><path class="m-sea" d="${SEA}"/>`;
   Object.entries(zhou).forEach(([z, cs]) => { const x = cs.reduce((a, c) => a + c.x, 0) / cs.length, y = cs.reduce((a, c) => a + c.y, 0) / cs.length; s += `<text class="m-zhou" x="${x}" y="${y + 14}">${z}</text>`; });
   RIVERS.forEach(([n, d, lx, ly]) => { s += `<path class="m-river" d="${d}"/><text class="m-rlabel" x="${lx}" y="${ly}">${n}</text>`; });
   ROADS.split(' ').forEach(r => { const [a, b] = r.split('-').map(cityIdx); s += `<line class="m-road" x1="${C(a).x}" y1="${C(a).y}" x2="${C(b).x}" y2="${C(b).y}"/>`; });
   G.cities.forEach(c => {
     const col = fcolor(c.owner);
     const sz = 8 + c.size * 2;
-    s += `<g class="city" data-c="${c.id}" tabindex="0" role="button" aria-label="${c.name}，${fname(c.owner)}" transform="translate(${c.x},${c.y})">`;
+    s += `<g class="city${pick ? (pick.has(c.id) ? ' m-pickable' : ' m-dim') : ''}" data-c="${c.id}" tabindex="0" role="button" aria-label="${c.name}，${fname(c.owner)}" transform="translate(${c.x},${c.y})">`;
+    if (pick && pick.has(c.id)) s += `<circle class="m-target" r="${sz + 13}"/>`;
     if (UI.sel === c.id) s += `<rect class="m-sel" x="${-sz - 6}" y="${-sz - 6}" width="${(sz + 6) * 2}" height="${(sz + 6) * 2}"/>`;
     if (p.city === c.id) s += `<circle class="m-me" r="${sz + 11}"/>`;
     s += col ? `<rect class="cs" x="${-sz}" y="${-sz}" width="${sz * 2}" height="${sz * 2}" style="fill:${col}"/>` : `<rect class="m-neutral" x="${-sz}" y="${-sz}" width="${sz * 2}" height="${sz * 2}"/>`;
@@ -1617,11 +1647,27 @@ async function menu() {
 const saveNow = () => toast(saveTo(SAVE_KEY) ? '已存檔。' : '無法存檔（瀏覽器不允許儲存）。');
 async function quitToTitle() { if (await ask('回到標題畫面？目前進度會留在自動存檔。', '回到標題', '取消')) { saveTo(AUTO_KEY); G = null; render(); } }
 
+// 在地圖上點選城市（移動等）：可選城市加紅圈，其餘變淡
+function pickOnMap(title, targets) {
+  return new Promise(res => {
+    UI.pickMap = {title, targets, res, view:UI.view};
+    UI.view = 'map'; UI.vb = null; UI.sel = P().city;
+    render();
+  });
+}
+function endPick(v) {
+  const pm = UI.pickMap; if (!pm) return;
+  UI.pickMap = null; UI.view = pm.view; render(); pm.res(v);
+}
+function cityClick(id) {
+  if (UI.pickMap) { if (UI.pickMap.targets.includes(id)) endPick(id); else toast('請點選有紅圈的城市，或按「取消」。'); return; }
+  UI.sel = id; if (!UI.mob) UI.side = 'city'; render();
+}
 // 所有按鈕集中處理（清單翻頁後新生成的列亦適用）
 app.addEventListener('click', e => {
   const t = e.target.closest('button,[data-c]'); if (!t || t.disabled) return;
   const d = t.dataset;
-  if (d.c != null) { if (Date.now() - (UI.dragged || 0) < 300) return; UI.sel = +d.c; if (!UI.mob) UI.side = 'city'; render(); return; }
+  if (d.c != null) { if (Date.now() - (UI.dragged || 0) < 300) return; return cityClick(+d.c); }
   if (d.pa) return doPersonal(d.pa);
   if (d.ca) return doCommand(d.ca, UI.sel);
   if (d.oid) return officerView(+d.oid);
@@ -1634,7 +1680,8 @@ app.addEventListener('click', e => {
   if (d.sort != null) { UI.sort = d.sort || null; UI.pages.title = 0; return updateTitle(); }
   if (d.pick) { UI.pick = +d.pick; return updateTitle(); }
   switch (t.id) {
-    case 'b-end': return endMonth();
+    case 'b-pickx': return endPick(null);
+    case 'b-end': if (UI.pickMap) endPick(null); return endMonth();
     case 'b-save': return saveNow();
     case 'b-help': return help();
     case 'b-forces': return forcesView();
@@ -1647,7 +1694,8 @@ app.addEventListener('click', e => {
   }
 });
 app.addEventListener('dblclick', e => { const t = e.target.closest('[data-pick]'); if (t) startAs(+t.dataset.pick); });
-app.addEventListener('keydown', e => { const g = e.target.closest('[data-c]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); UI.sel = +g.dataset.c; if (!UI.mob) UI.side = 'city'; render(); } });
+app.addEventListener('keydown', e => { const g = e.target.closest('[data-c]'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); cityClick(+g.dataset.c); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI.pickMap && !document.querySelector('.modal')) endPick(null); });
 app.addEventListener('input', e => { if (e.target.id === 't-q') { UI.q = e.target.value.trim(); UI.pages.title = 0; updateTitle(); } });
 
 // ───────── 介面：標題 ─────────

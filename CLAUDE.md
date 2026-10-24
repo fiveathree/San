@@ -20,6 +20,8 @@
 - 玩家是主公時，電腦只替「委任」的城市做內政，不替玩家出兵。
 - 戰鬥 `makeBattle()` → `runBattle()`（`B.ui` 時開戰場畫面，`B.ctrl` 是玩家可操控的部隊）→ `applyBattle()`（城池易手、俘虜、逃走）→ `processCaptives()`。電腦之間的戰鬥不顯示畫面。
 - 介面：桌面為地圖 + 右側分頁（行動／城市／記事）；寬度 < 900px 改為底部分頁（地圖／行動／城市／記事）。地圖縮放不足 0.6 倍時改為局部放大並可拖曳（`fitMap()`、`UI.vb`）。所有按鈕由 `app` 上的單一 click 監聽處理（`data-pa`、`data-ca`、`data-oid` 等）。
+- 地圖點選：`pickOnMap(title, targets)` 回傳 Promise，地圖顯示紅圈與「取消」橫條（`UI.pickMap`），城市點擊經 `cityClick()`；目前用於移動。
+- 登用：`recruitScope()`（主公全國、太守本城＋相鄰）、`targetChance()`（敵將看忠誠、他城 −5%），先揀目標再揀派去的武將，成功後移到下令城市。
 - 同伴（在野結伴）：`G.party`（最多 `PARTY_MAX` 人）、`G.ptroops`（義勇兵）。同伴隨玩家移動、每月親密 +2，不會被電腦登用或遊走；`bringParty()` 在求仕／受邀仕官時一同加入，舉兵時亦加入。玩家不再在野時清空。
 - 本地預覽：上層 `.claude/launch.json` 的 `san`（port 8141）。
 
