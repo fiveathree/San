@@ -1175,12 +1175,12 @@ async function doCommand(k, ci) {
     const r = runTask(key, c, O(id));
     log(r.err ? r.err : `${O(id).name} ${TASKS[key].n}：${r.msg}`, true);
   } else if (k === 'attack') {
-    const targets = ADJ[ci].map(C).filter(t => t.owner !== c.owner);
-    if (!targets.length) return toast('沒有相鄰的敵城。');
-    const ti = await choose(`從${c.name}出征`, targets.map(t => ({label:t.name, sub:`${fname(t.owner)}・兵 ${t.troops}・武將 ${t.owner == null ? 0 : servants(t.owner, t.id).length}`, value:t.id})));
-    if (ti == null) return;
+    const targets = ADJ[ci].filter(i => C(i).owner !== c.owner);
+    if (!targets.length) return toast('沒有相鄰的敵城或無主城。');
     const pool = avail(); if (p.city === ci) pool.unshift(p);
     if (!pool.length) return toast('沒有可出征的武將。');
+    const ti = await pickOnMap(`從${c.name}出征：點選目標城市`, targets, ci);
+    if (ti == null) return;
     const setup = await attackSetup(c, C(ti), pool);
     if (!setup) return;
     const t = C(ti);
@@ -1232,7 +1232,9 @@ async function doCommand(k, ci) {
     const list = avail(); if (!list.length) return toast('沒有可調動的武將。');
     const id = await pickOfficer('調動誰？', list, 'lead');
     if (id == null) return;
-    const dest = await choose(`${O(id).name} 調往`, forceCities(c.owner).filter(x => x.id !== ci).map(x => ({label:x.name, sub:`武將 ${servants(c.owner, x.id).length}`, value:x.id})));
+    const dests = forceCities(c.owner).filter(x => x.id !== ci).map(x => x.id);
+    if (!dests.length) return toast('沒有其他己方城市。');
+    const dest = await pickOnMap(`${O(id).name} 調往：點選己方城市`, dests, ci);
     if (dest == null) return;
     const o = O(id); if (c.gov === id) c.gov = null; o.city = dest; o.done = true; fixGov(c); fixGov(C(dest));
     log(`${o.name} 調往${C(dest).name}。`, true);
@@ -1648,16 +1650,16 @@ const saveNow = () => toast(saveTo(SAVE_KEY) ? '已存檔。' : '無法存檔（
 async function quitToTitle() { if (await ask('回到標題畫面？目前進度會留在自動存檔。', '回到標題', '取消')) { saveTo(AUTO_KEY); G = null; render(); } }
 
 // 在地圖上點選城市（移動等）：可選城市加紅圈，其餘變淡
-function pickOnMap(title, targets) {
+function pickOnMap(title, targets, from = P().city) {
   return new Promise(res => {
-    UI.pickMap = {title, targets, res, view:UI.view};
-    UI.view = 'map'; UI.vb = null; UI.sel = P().city;
+    UI.pickMap = {title, targets, res, view:UI.view, sel:UI.sel};
+    UI.view = 'map'; UI.vb = null; UI.sel = from;
     render();
   });
 }
 function endPick(v) {
   const pm = UI.pickMap; if (!pm) return;
-  UI.pickMap = null; UI.view = pm.view; render(); pm.res(v);
+  UI.pickMap = null; UI.view = pm.view; if (v == null) UI.sel = pm.sel; render(); pm.res(v);
 }
 function cityClick(id) {
   if (UI.pickMap) { if (UI.pickMap.targets.includes(id)) endPick(id); else toast('請點選有紅圈的城市，或按「取消」。'); return; }
